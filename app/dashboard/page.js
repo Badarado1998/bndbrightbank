@@ -492,7 +492,7 @@ export default function DashboardPage() {
                     <div className="card-body p-4 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
                         <div className="d-flex flex-wrap gap-4">
                             <div>
-                                <span className="small text-muted-light d-block mb-1">ACCOUNT NUMBER</span>
+                                <span className="small text-muted-light d-block mb-1">ACCOUNT NUMBER (USD)</span>
                                 <div className="d-flex align-items-center gap-2">
                                     <span className="font-monospace fw-bold fs-5 tracking-wider text-white">{user?.account_number}</span>
                                     <button className="btn btn-sm btn-link p-0 text-indigo opacity-75 hover-opacity-100" onClick={() => {
@@ -504,12 +504,18 @@ export default function DashboardPage() {
                                 </div>
                             </div>
                             <div>
-                                <span className="small text-muted-light d-block mb-1">ROUTING NUMBER</span>
+                                <span className="small text-muted-light d-block mb-1">
+                                    {user?.country === 'United Kingdom' ? 'SORT CODE' :
+                                     user?.country === 'Australia' ? 'BSB CODE' :
+                                     user?.country === 'Canada' ? 'TRANSIT CODE' :
+                                     (user?.country === 'Germany' || user?.country === 'France') ? 'BIC / SWIFT CODE' :
+                                     'ROUTING NUMBER'} ({user?.country ? user.country.toUpperCase() : 'UNITED STATES'})
+                                </span>
                                 <div className="d-flex align-items-center gap-2">
                                     <span className="font-monospace fw-bold fs-5 tracking-wider text-white">{user?.routing_number}</span>
                                     <button className="btn btn-sm btn-link p-0 text-indigo opacity-75 hover-opacity-100" onClick={() => {
                                         navigator.clipboard.writeText(user?.routing_number);
-                                        if (window.Swal) window.Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Routing number copied', showConfirmButton: false, timer: 1500, background: '#1e293b', color: '#fff' });
+                                        if (window.Swal) window.Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Code copied', showConfirmButton: false, timer: 1500, background: '#1e293b', color: '#fff' });
                                     }}>
                                         <i className="fa-regular fa-copy text-info"></i>
                                     </button>

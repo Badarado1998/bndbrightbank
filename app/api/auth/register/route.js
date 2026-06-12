@@ -6,7 +6,7 @@ import { setSession } from '@/lib/session';
 export async function POST(request) {
     try {
         const body = await request.json();
-        const { name, email, password, confirmPassword } = body;
+        const { name, email, password, confirmPassword, country = 'United States' } = body;
 
         // 1. Validation
         if (!name || !email || !password || !confirmPassword) {
@@ -42,7 +42,34 @@ export async function POST(request) {
                 isUnique = true;
             }
         }
-        const routing_number = Math.floor(100000000 + Math.random() * 900000000).toString(); // 9-digit
+
+        // Generate country specific codes
+        let routing_number = "";
+        if (country === 'United Kingdom') {
+            // Sort Code: 6 digits e.g. 20-40-60
+            const a = Math.floor(10 + Math.random() * 89).toString();
+            const b = Math.floor(10 + Math.random() * 89).toString();
+            const c = Math.floor(10 + Math.random() * 89).toString();
+            routing_number = `${a}-${b}-${c}`;
+        } else if (country === 'Australia') {
+            // BSB: 6 digits e.g. 062-900
+            const a = Math.floor(100 + Math.random() * 899).toString();
+            const b = Math.floor(100 + Math.random() * 899).toString();
+            routing_number = `${a}-${b}`;
+        } else if (country === 'Canada') {
+            // Transit: 9 digits e.g. 12345-123
+            const a = Math.floor(10000 + Math.random() * 89999).toString();
+            const b = Math.floor(100 + Math.random() * 899).toString();
+            routing_number = `${a}-${b}`;
+        } else if (country === 'Germany' || country === 'France') {
+            // BIC / SWIFT code structure e.g. PNDBDEFFXXX
+            const cCode = country === 'Germany' ? 'DE' : 'FR';
+            const suffix = Math.random().toString(36).substring(2, 5).toUpperCase();
+            routing_number = `PNDB${cCode}FF${suffix}`;
+        } else {
+            // United States / Other: Standard 9 digits
+            routing_number = Math.floor(100000000 + Math.random() * 900000000).toString();
+        }
 
         // 4. Hash password
         const hashedPassword = await bcrypt.hash(password, 10);
@@ -54,6 +81,7 @@ export async function POST(request) {
             password: hashedPassword,
             account_number,
             routing_number,
+            country,
             role: 'user'
         });
 

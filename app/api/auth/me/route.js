@@ -25,6 +25,7 @@ export async function GET(request) {
                 role: dbUser.role,
                 account_number: dbUser.account_number,
                 routing_number: dbUser.routing_number,
+                country: dbUser.country || 'United States',
                 must_change_password: dbUser.must_change_password
             }
         });

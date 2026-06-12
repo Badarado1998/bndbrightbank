@@ -15,6 +15,7 @@ export default function LoginPage() {
     const [password, setPassword] = useState('');
     const [name, setName] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
+    const [country, setCountry] = useState('United States');
 
     // Check if user is already logged in
     useEffect(() => {
@@ -81,7 +82,7 @@ export default function LoginPage() {
             const res = await fetch('/api/auth/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, email, password, confirmPassword })
+                body: JSON.stringify({ name, email, password, confirmPassword, country })
             });
             const data = await res.json();
             if (!res.ok) {
@@ -275,23 +276,54 @@ export default function LoginPage() {
                                 </div>
 
                                 {isRegister && (
-                                    <div className="form-group">
-                                        <label className="text-secondary small mb-1 fw-semibold">Confirm Password</label>
-                                        <div className="input-group">
-                                            <span className="input-group-text border-0 text-secondary" style={{ background: 'rgba(255,255,255,0.05)', borderRadius: '12px 0 0 12px' }}>
-                                                <i className="fa-solid fa-lock-open"></i>
-                                            </span>
-                                            <input 
-                                                type="password" 
-                                                className="form-control border-0 text-white placeholder-secondary"
-                                                style={{ background: 'rgba(255,255,255,0.05)', borderRadius: '0 12px 12px 0', padding: '12px' }}
-                                                placeholder="••••••••" 
-                                                value={confirmPassword}
-                                                onChange={e => setConfirmPassword(e.target.value)}
-                                                required
-                                            />
+                                    <>
+                                        <div className="form-group">
+                                            <label className="text-secondary small mb-1 fw-semibold">Confirm Password</label>
+                                            <div className="input-group">
+                                                <span className="input-group-text border-0 text-secondary" style={{ background: 'rgba(255,255,255,0.05)', borderRadius: '12px 0 0 12px' }}>
+                                                    <i className="fa-solid fa-lock-open"></i>
+                                                </span>
+                                                <input 
+                                                    type="password" 
+                                                    className="form-control border-0 text-white placeholder-secondary"
+                                                    style={{ background: 'rgba(255,255,255,0.05)', borderRadius: '0 12px 12px 0', padding: '12px' }}
+                                                    placeholder="••••••••" 
+                                                    value={confirmPassword}
+                                                    onChange={e => setConfirmPassword(e.target.value)}
+                                                    required
+                                                />
+                                            </div>
                                         </div>
-                                    </div>
+
+                                        <div className="form-group">
+                                            <label className="text-secondary small mb-1 fw-semibold">Country of Residence</label>
+                                            <div className="input-group">
+                                                <span className="input-group-text border-0 text-secondary" style={{ background: 'rgba(255,255,255,0.05)', borderRadius: '12px 0 0 12px' }}>
+                                                    <i className="fa-solid fa-earth-americas"></i>
+                                                </span>
+                                                <select 
+                                                    className="form-control border-0 text-white select-custom"
+                                                    style={{ 
+                                                        background: 'rgba(15, 23, 42, 0.9)', 
+                                                        borderRadius: '0 12px 12px 0', 
+                                                        padding: '12px',
+                                                        color: '#ffffff'
+                                                    }}
+                                                    value={country}
+                                                    onChange={e => setCountry(e.target.value)}
+                                                    required
+                                                >
+                                                    <option value="United States" style={{ background: '#1e293b' }}>United States (Routing No.)</option>
+                                                    <option value="United Kingdom" style={{ background: '#1e293b' }}>United Kingdom (Sort Code)</option>
+                                                    <option value="Australia" style={{ background: '#1e293b' }}>Australia (BSB / PayID)</option>
+                                                    <option value="Canada" style={{ background: '#1e293b' }}>Canada (Transit No.)</option>
+                                                    <option value="Germany" style={{ background: '#1e293b' }}>Germany (BIC/SWIFT)</option>
+                                                    <option value="France" style={{ background: '#1e293b' }}>France (BIC/SWIFT)</option>
+                                                    <option value="Other" style={{ background: '#1e293b' }}>Other Country (Routing Transit)</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </>
                                 )}
 
                                 <button 
