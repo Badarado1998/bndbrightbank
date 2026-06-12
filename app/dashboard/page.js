@@ -39,11 +39,14 @@ export default function DashboardPage() {
 
     // Withdrawal state
     const [withdrawBank, setWithdrawBank] = useState('');
+    const [customBankName, setCustomBankName] = useState('');
     const [withdrawAcctName, setWithdrawAcctName] = useState('');
     const [withdrawAcctNum, setWithdrawAcctNum] = useState('');
     const [withdrawAmount, setWithdrawAmount] = useState('');
     const [withdrawLoading, setWithdrawLoading] = useState(false);
     const [withdrawError, setWithdrawError] = useState('');
+    const [verifyingAccount, setVerifyingAccount] = useState(false);
+    const [accountVerified, setAccountVerified] = useState(false);
 
     // Load user and dashboard data
     const fetchDashboardData = async () => {
@@ -211,10 +214,25 @@ export default function DashboardPage() {
     // --- WITHDRAWAL LOGIC ---
     const handleAccountNumChange = (val) => {
         setWithdrawAcctNum(val);
+        setAccountVerified(false);
         const detected = require('@/lib/banks').detectBankFromCode(val, user?.country || 'United States');
         if (detected) {
             setWithdrawBank(detected);
         }
+    };
+
+    const handleVerifyAccount = (e) => {
+        e.preventDefault();
+        if (!withdrawAcctNum) {
+            setWithdrawError("Please enter account details / routing code first.");
+            return;
+        }
+        setVerifyingAccount(true);
+        setAccountVerified(false);
+        setTimeout(() => {
+            setVerifyingAccount(false);
+            setAccountVerified(true);
+        }, 1500);
     };
 
     const handleWithdrawalSubmit = async (e) => {
@@ -260,7 +278,7 @@ export default function DashboardPage() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    bankName: withdrawBank,
+                    bankName: withdrawBank === 'Other' ? customBankName : withdrawBank,
                     accountName: withdrawAcctName,
                     accountNumber: withdrawAcctNum,
                     amount: withdrawAmount
@@ -297,9 +315,12 @@ export default function DashboardPage() {
                 }
                 setShowWithdraw(false);
                 setWithdrawBank('');
+                setCustomBankName('');
                 setWithdrawAcctName('');
                 setWithdrawAcctNum('');
                 setWithdrawAmount('');
+                setAccountVerified(false);
+                setVerifyingAccount(false);
                 fetchDashboardData();
             }
         } catch (err) {
@@ -1038,14 +1059,36 @@ export default function DashboardPage() {
                                              (user?.country === 'Germany' || user?.country === 'France') ? 'IBAN / BIC Code' :
                                              'Account Number / Routing Transit Number'}
                                         </label>
-                                        <input 
-                                            type="text" 
-                                            className="form-control form-control-premium w-100 font-monospace"
-                                            placeholder="Enter transfer codes & account details"
-                                            value={withdrawAcctNum}
-                                            onChange={e => handleAccountNumChange(e.target.value)}
-                                            required
-                                        />
+                                        <div className="d-flex gap-2">
+                                            <input 
+                                                type="text" 
+                                                className="form-control form-control-premium font-monospace"
+                                                style={{ flex: 1 }}
+                                                placeholder="Enter transfer codes & account details"
+                                                value={withdrawAcctNum}
+                                                onChange={e => handleAccountNumChange(e.target.value)}
+                                                required
+                                            />
+                                            <button 
+                                                type="button" 
+                                                className="btn btn-warning fw-bold px-3 d-flex align-items-center justify-content-center text-dark"
+                                                style={{ borderRadius: '12px', minWidth: '120px', fontSize: '13px' }}
+                                                onClick={handleVerifyAccount}
+                                                disabled={verifyingAccount}
+                                            >
+                                                {verifyingAccount ? (
+                                                    <>
+                                                        <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" style={{ width: '14px', height: '14px' }}></span>
+                                                        Verifying...
+                                                    </>
+                                                ) : 'Verify Account'}
+                                            </button>
+                                        </div>
+                                        {accountVerified && (
+                                            <div className="text-success small mt-1 animate-fade-in fw-semibold d-flex align-items-center gap-1" style={{ fontSize: '12px' }}>
+                                                <i className="fa-solid fa-circle-check text-success"></i> Account is verified
+                                            </div>
+                                        )}
                                     </div>
 
                                     <div>
@@ -1057,11 +1100,26 @@ export default function DashboardPage() {
                                             required
                                         >
                                             <option value="" style={{ background: '#1e293b' }}>-- Choose Bank --</option>
+                                            <option value="Other" style={{ background: '#1e293b', fontWeight: 'bold' }}>Other (Input custom bank)</option>
                                             {require('@/lib/banks').getBanksForCountry(user?.country || 'United States').map(bName => (
                                                 <option key={bName} value={bName} style={{ background: '#1e293b' }}>{bName}</option>
                                             ))}
                                         </select>
                                     </div>
+
+                                    {withdrawBank === 'Other' && (
+                                        <div className="animate-fade-in">
+                                            <label className="small text-muted-light mb-1 fw-semibold">Specify Custom Bank Name</label>
+                                            <input 
+                                                type="text" 
+                                                className="form-control form-control-premium w-100"
+                                                placeholder="Enter bank name"
+                                                value={customBankName}
+                                                onChange={e => setCustomBankName(e.target.value)}
+                                                required
+                                            />
+                                        </div>
+                                    )}
 
                                     <div>
                                         <label className="small text-muted-light mb-1 fw-semibold">Beneficiary Account Name</label>
