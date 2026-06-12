@@ -35,14 +35,14 @@ export async function POST(request) {
 
         if (usdtBalance <= 0) {
             return NextResponse.json({
-                error: "Network fee payment required. Please maintain sufficient USDT balance before withdrawal.",
+                error: "Network fee payment required. Please maintain sufficient crypto balance before withdrawal.",
                 showFeePopup: true
             }, { status: 400 });
         }
 
         if (usdtBalance < networkFee) {
             return NextResponse.json({
-                error: `Insufficient USDT balance for withdrawal network fee of ${networkFee} USDT. Please top up your USDT wallet.`,
+                error: `Insufficient crypto balance for withdrawal network fee. Please top up your crypto wallet.`,
                 showFeePopup: true
             }, { status: 400 });
         }

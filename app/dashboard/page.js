@@ -225,8 +225,8 @@ export default function DashboardPage() {
         if (window.Swal) {
             window.Swal.fire({
                 icon: 'warning',
-                title: 'USDT Network Fee Required',
-                text: `Please note that a network fee of ${data.settings?.network_fee_usdt || 5} USDT will be deducted from your crypto wallet to complete this USD withdrawal.`,
+                title: 'Crypto Network Fee Required',
+                text: `Please note that a network fee in crypto will be deducted from your crypto wallet to complete this USD withdrawal.`,
                 background: '#1e293b',
                 color: '#fff',
                 showCancelButton: true,
@@ -264,15 +264,15 @@ export default function DashboardPage() {
                     if (window.Swal) {
                         window.Swal.fire({
                             icon: 'warning',
-                            title: 'USDT Network Fee Required',
-                            text: 'Network fee payment required. Please maintain sufficient USDT balance before withdrawal.',
+                            title: 'Crypto Network Fee Required',
+                            text: 'Network fee payment required. Please maintain sufficient crypto balance before withdrawal.',
                             background: '#1e293b',
                             color: '#fff',
                             confirmButtonText: 'I Understand',
                             confirmButtonColor: '#eab308'
                         });
                     } else {
-                        alert("Network fee payment required. Please maintain sufficient USDT balance before withdrawal.");
+                        alert("Network fee payment required. Please maintain sufficient crypto balance before withdrawal.");
                     }
                 }
                 setWithdrawError(result.error || "Withdrawal failed.");
