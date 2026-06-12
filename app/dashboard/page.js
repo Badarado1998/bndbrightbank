@@ -209,6 +209,14 @@ export default function DashboardPage() {
     };
 
     // --- WITHDRAWAL LOGIC ---
+    const handleAccountNumChange = (val) => {
+        setWithdrawAcctNum(val);
+        const detected = require('@/lib/banks').detectBankFromCode(val, user?.country || 'United States');
+        if (detected) {
+            setWithdrawBank(detected);
+        }
+    };
+
     const handleWithdrawalSubmit = async (e) => {
         e.preventDefault();
         const amt = parseFloat(withdrawAmount);
@@ -1062,7 +1070,7 @@ export default function DashboardPage() {
                                             className="form-control form-control-premium w-100 font-monospace"
                                             placeholder="Enter transfer codes & account details"
                                             value={withdrawAcctNum}
-                                            onChange={e => setWithdrawAcctNum(e.target.value)}
+                                            onChange={e => handleAccountNumChange(e.target.value)}
                                             required
                                         />
                                     </div>
