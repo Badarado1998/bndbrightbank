@@ -32,16 +32,47 @@ export async function POST(request) {
 
         // 1. Process and save the file
         const buffer = Buffer.from(await proofFile.arrayBuffer());
-        const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'proofs');
-        await fs.mkdir(uploadDir, { recursive: true });
+        let proofPath = "";
 
-        // Create a unique, clean filename
-        const safeName = proofFile.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-        const filename = `${Date.now()}-${safeName}`;
-        const filepath = path.join(uploadDir, filename);
+        if (db.getMode() === 'supabase') {
+            const supabase = require('@/lib/supabase');
+            
+            // Create a unique, clean filename
+            const safeName = proofFile.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+            const filename = `${Date.now()}-${safeName}`;
 
-        await fs.writeFile(filepath, buffer);
-        const proofPath = `/uploads/proofs/${filename}`;
+            // Upload to Supabase Storage Bucket named "proofs"
+            const { data, error: uploadError } = await supabase.storage
+                .from('proofs')
+                .upload(filename, buffer, {
+                    contentType: proofFile.type,
+                    duplex: 'half'
+                });
+
+            if (uploadError) {
+                console.error("Supabase Storage upload error:", uploadError);
+                // Fallback to try public URL estimation, or throw
+                throw new Error("Failed to upload proof to Supabase storage. Make sure a 'proofs' bucket exists with public access.");
+            }
+
+            // Get Public URL
+            const { data: { publicUrl } } = supabase.storage
+                .from('proofs')
+                .getPublicUrl(filename);
+
+            proofPath = publicUrl;
+        } else {
+            const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'proofs');
+            await fs.mkdir(uploadDir, { recursive: true });
+
+            // Create a unique, clean filename
+            const safeName = proofFile.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+            const filename = `${Date.now()}-${safeName}`;
+            const filepath = path.join(uploadDir, filename);
+
+            await fs.writeFile(filepath, buffer);
+            proofPath = `/uploads/proofs/${filename}`;
+        }
 
         // 2. Write deposit request to DB
         const deposit = await db.createDepositRequest({
@@ -66,7 +97,7 @@ export async function POST(request) {
 
     } catch (error) {
         console.error("Deposit request API error:", error);
-        return NextResponse.json({ error: "Internal server error." }, { status: 500 });
+        return NextResponse.json({ error: error.message || "Internal server error." }, { status: 500 });
     }
 }
 
