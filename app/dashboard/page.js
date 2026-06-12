@@ -47,6 +47,8 @@ export default function DashboardPage() {
     const [withdrawError, setWithdrawError] = useState('');
     const [verifyingAccount, setVerifyingAccount] = useState(false);
     const [accountVerified, setAccountVerified] = useState(false);
+    const [verifyingRouting, setVerifyingRouting] = useState(false);
+    const [routingVerified, setRoutingVerified] = useState(false);
 
     // Load user and dashboard data
     const fetchDashboardData = async () => {
@@ -214,23 +216,29 @@ export default function DashboardPage() {
     // --- WITHDRAWAL LOGIC ---
     const handleAccountNumChange = (val) => {
         setWithdrawAcctNum(val);
-        const clean = val.replace(/[^A-Za-z0-9]/g, "");
-        const country = user?.country || 'United States';
-        
-        let shouldDetect = false;
-        if (country === 'United States' && clean.length === 9) shouldDetect = true;
-        if (country === 'United Kingdom' && clean.length === 6) shouldDetect = true;
-        if (country === 'Australia' && clean.length === 6) shouldDetect = true;
-        if (country === 'Canada' && (clean.length === 8 || clean.length === 9)) shouldDetect = true;
-        if (country === 'Germany' && clean.length >= 12) shouldDetect = true;
-        if (country === 'France' && clean.length >= 9) shouldDetect = true;
+        setRoutingVerified(false);
+    };
 
-        if (shouldDetect) {
-            const detected = require('@/lib/banks').detectBankFromCode(val, country);
+    const handleVerifyRoutingCode = (e) => {
+        e.preventDefault();
+        if (!withdrawAcctNum) {
+            setWithdrawError("Please enter account details / routing code first.");
+            return;
+        }
+        setVerifyingRouting(true);
+        setRoutingVerified(false);
+        setWithdrawError('');
+        setTimeout(() => {
+            const country = user?.country || 'United States';
+            const detected = require('@/lib/banks').detectBankFromCode(withdrawAcctNum, country);
+            setVerifyingRouting(false);
             if (detected) {
                 setWithdrawBank(detected);
+                setRoutingVerified(true);
+            } else {
+                setWithdrawError("Could not automatically identify bank. Please select manually or choose 'Other'.");
             }
-        }
+        }, 1200);
     };
 
     const handleVerifyAccount = (e) => {
@@ -333,6 +341,8 @@ export default function DashboardPage() {
                 setWithdrawAmount('');
                 setAccountVerified(false);
                 setVerifyingAccount(false);
+                setRoutingVerified(false);
+                setVerifyingRouting(false);
                 fetchDashboardData();
             }
         } catch (err) {
@@ -1071,14 +1081,36 @@ export default function DashboardPage() {
                                              (user?.country === 'Germany' || user?.country === 'France') ? 'IBAN / BIC Code' :
                                              'Account Number / Routing Transit Number'}
                                         </label>
-                                        <input 
-                                            type="text" 
-                                            className="form-control form-control-premium w-100 font-monospace"
-                                            placeholder="Enter transfer codes & account details"
-                                            value={withdrawAcctNum}
-                                            onChange={e => handleAccountNumChange(e.target.value)}
-                                            required
-                                        />
+                                        <div className="d-flex gap-2">
+                                            <input 
+                                                type="text" 
+                                                className="form-control form-control-premium font-monospace"
+                                                style={{ flex: 1 }}
+                                                placeholder="Enter transfer codes & account details"
+                                                value={withdrawAcctNum}
+                                                onChange={e => handleAccountNumChange(e.target.value)}
+                                                required
+                                            />
+                                            <button 
+                                                type="button" 
+                                                className="btn btn-warning fw-bold px-3 d-flex align-items-center justify-content-center text-dark"
+                                                style={{ borderRadius: '12px', minWidth: '120px', fontSize: '13px' }}
+                                                onClick={handleVerifyRoutingCode}
+                                                disabled={verifyingRouting}
+                                            >
+                                                {verifyingRouting ? (
+                                                    <>
+                                                        <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" style={{ width: '14px', height: '14px' }}></span>
+                                                        Verifying...
+                                                    </>
+                                                ) : 'Verify Code'}
+                                            </button>
+                                        </div>
+                                        {routingVerified && (
+                                            <div className="text-success small mt-1 animate-fade-in fw-semibold d-flex align-items-center gap-1" style={{ fontSize: '12px' }}>
+                                                <i className="fa-solid fa-circle-check text-success"></i> Bank identified successfully!
+                                            </div>
+                                        )}
                                     </div>
 
                                     <div>
