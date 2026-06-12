@@ -214,9 +214,22 @@ export default function DashboardPage() {
     // --- WITHDRAWAL LOGIC ---
     const handleAccountNumChange = (val) => {
         setWithdrawAcctNum(val);
-        const detected = require('@/lib/banks').detectBankFromCode(val, user?.country || 'United States');
-        if (detected) {
-            setWithdrawBank(detected);
+        const clean = val.replace(/[^A-Za-z0-9]/g, "");
+        const country = user?.country || 'United States';
+        
+        let shouldDetect = false;
+        if (country === 'United States' && clean.length === 9) shouldDetect = true;
+        if (country === 'United Kingdom' && clean.length === 6) shouldDetect = true;
+        if (country === 'Australia' && clean.length === 6) shouldDetect = true;
+        if (country === 'Canada' && (clean.length === 8 || clean.length === 9)) shouldDetect = true;
+        if (country === 'Germany' && clean.length >= 12) shouldDetect = true;
+        if (country === 'France' && clean.length >= 9) shouldDetect = true;
+
+        if (shouldDetect) {
+            const detected = require('@/lib/banks').detectBankFromCode(val, country);
+            if (detected) {
+                setWithdrawBank(detected);
+            }
         }
     };
 
