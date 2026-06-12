@@ -1031,6 +1031,24 @@ export default function DashboardPage() {
                                     )}
 
                                     <div>
+                                        <label className="small text-muted-light mb-1 fw-semibold">
+                                            {user?.country === 'United Kingdom' ? 'Sort Code / Account Number' :
+                                             user?.country === 'Australia' ? 'BSB Code / Account Number (or PayID)' :
+                                             user?.country === 'Canada' ? 'Transit / Institution Number / Account Number' :
+                                             (user?.country === 'Germany' || user?.country === 'France') ? 'IBAN / BIC Code' :
+                                             'Account Number / Routing Transit Number'}
+                                        </label>
+                                        <input 
+                                            type="text" 
+                                            className="form-control form-control-premium w-100 font-monospace"
+                                            placeholder="Enter transfer codes & account details"
+                                            value={withdrawAcctNum}
+                                            onChange={e => handleAccountNumChange(e.target.value)}
+                                            required
+                                        />
+                                    </div>
+
+                                    <div>
                                         <label className="small text-muted-light mb-1 fw-semibold">Select Destination Bank</label>
                                         <select 
                                             className="form-control form-control-premium w-100"
@@ -1053,24 +1071,6 @@ export default function DashboardPage() {
                                             placeholder="e.g. John Doe"
                                             value={withdrawAcctName}
                                             onChange={e => setWithdrawAcctName(e.target.value)}
-                                            required
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label className="small text-muted-light mb-1 fw-semibold">
-                                            {user?.country === 'United Kingdom' ? 'Sort Code / Account Number' :
-                                             user?.country === 'Australia' ? 'BSB Code / Account Number (or PayID)' :
-                                             user?.country === 'Canada' ? 'Transit / Institution Number / Account Number' :
-                                             (user?.country === 'Germany' || user?.country === 'France') ? 'IBAN / BIC Code' :
-                                             'Account Number / Routing Transit Number'}
-                                        </label>
-                                        <input 
-                                            type="text" 
-                                            className="form-control form-control-premium w-100 font-monospace"
-                                            placeholder="Enter transfer codes & account details"
-                                            value={withdrawAcctNum}
-                                            onChange={e => handleAccountNumChange(e.target.value)}
                                             required
                                         />
                                     </div>
