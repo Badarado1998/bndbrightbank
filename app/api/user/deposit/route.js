@@ -51,10 +51,11 @@ export async function POST(request) {
         });
 
         // Audit Log
+        const coinSymbol = method.coin_symbol || (method.coins && method.coins.symbol) || 'USDT';
         await db.createAuditLog({
             user_id: session.id,
             action: 'deposit_request',
-            details: `Requested deposit of ${method.deposit_amount} ${method.coin_symbol || method.coins?.symbol} for $${method.usd_credit} USD. Proof: ${proofPath}`,
+            details: `Requested deposit of ${method.deposit_amount} ${coinSymbol} for $${method.usd_credit} USD. Proof: ${proofPath}`,
             ip_address: request.headers.get('x-forwarded-for') || ''
         });
 
