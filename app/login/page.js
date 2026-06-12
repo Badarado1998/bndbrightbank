@@ -313,13 +313,11 @@ export default function LoginPage() {
                                                     onChange={e => setCountry(e.target.value)}
                                                     required
                                                 >
-                                                    <option value="United States" style={{ background: '#1e293b' }}>United States (Routing No.)</option>
-                                                    <option value="United Kingdom" style={{ background: '#1e293b' }}>United Kingdom (Sort Code)</option>
-                                                    <option value="Australia" style={{ background: '#1e293b' }}>Australia (BSB / PayID)</option>
-                                                    <option value="Canada" style={{ background: '#1e293b' }}>Canada (Transit No.)</option>
-                                                    <option value="Germany" style={{ background: '#1e293b' }}>Germany (BIC/SWIFT)</option>
-                                                    <option value="France" style={{ background: '#1e293b' }}>France (BIC/SWIFT)</option>
-                                                    <option value="Other" style={{ background: '#1e293b' }}>Other Country (Routing Transit)</option>
+                                                    {require('@/lib/countries').map(c => (
+                                                        <option key={c.code} value={c.name} style={{ background: '#1e293b' }}>
+                                                            {c.name}
+                                                        </option>
+                                                    ))}
                                                 </select>
                                             </div>
                                         </div>

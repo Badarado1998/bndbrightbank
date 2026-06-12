@@ -43,31 +43,45 @@ export async function POST(request) {
             }
         }
 
-        // Generate country specific codes
+        // Generate country specific codes based on international standards
         let routing_number = "";
-        if (country === 'United Kingdom') {
-            // Sort Code: 6 digits e.g. 20-40-60
+        
+        // Group lists for formatting
+        const sortCodeCountries = ['United Kingdom', 'Ireland'];
+        const bsbCountries = ['Australia', 'New Zealand'];
+        const transitCountries = ['Canada'];
+        const bicCountries = [
+            'Germany', 'France', 'Italy', 'Spain', 'Netherlands', 'Belgium', 
+            'Switzerland', 'Sweden', 'Norway', 'Denmark', 'Finland', 'Portugal',
+            'Austria', 'Greece', 'Poland', 'Ukraine', 'Czechia', 'Hungary', 
+            'Romania', 'Singapore', 'Japan', 'Hong Kong', 'United Arab Emirates',
+            'Saudi Arabia', 'Qatar', 'South Africa'
+        ];
+
+        if (sortCodeCountries.includes(country)) {
+            // Sort Code: e.g. 20-40-60
             const a = Math.floor(10 + Math.random() * 89).toString();
             const b = Math.floor(10 + Math.random() * 89).toString();
             const c = Math.floor(10 + Math.random() * 89).toString();
             routing_number = `${a}-${b}-${c}`;
-        } else if (country === 'Australia') {
-            // BSB: 6 digits e.g. 062-900
+        } else if (bsbCountries.includes(country)) {
+            // BSB: e.g. 062-900
             const a = Math.floor(100 + Math.random() * 899).toString();
             const b = Math.floor(100 + Math.random() * 899).toString();
             routing_number = `${a}-${b}`;
-        } else if (country === 'Canada') {
-            // Transit: 9 digits e.g. 12345-123
+        } else if (transitCountries.includes(country)) {
+            // Transit: e.g. 12345-123
             const a = Math.floor(10000 + Math.random() * 89999).toString();
             const b = Math.floor(100 + Math.random() * 899).toString();
             routing_number = `${a}-${b}`;
-        } else if (country === 'Germany' || country === 'France') {
-            // BIC / SWIFT code structure e.g. PNDBDEFFXXX
-            const cCode = country === 'Germany' ? 'DE' : 'FR';
+        } else if (bicCountries.includes(country)) {
+            // SWIFT / BIC: e.g. PNDB[ISO-CODE]FF[SUFFIX]
+            const list = require('@/lib/countries');
+            const cObj = list.find(c => c.name === country) || { code: 'US' };
             const suffix = Math.random().toString(36).substring(2, 5).toUpperCase();
-            routing_number = `PNDB${cCode}FF${suffix}`;
+            routing_number = `PNDB${cObj.code}FF${suffix}`;
         } else {
-            // United States / Other: Standard 9 digits
+            // US and other countries: standard 9-digit Transit Routing Number
             routing_number = Math.floor(100000000 + Math.random() * 900000000).toString();
         }
 
