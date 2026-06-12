@@ -140,5 +140,5 @@ export async function DELETE(request) {
 
 // Check helper variables
 const isSupabase = db.getMode() === 'supabase';
-const sqlite = require('@/lib/sqlite');
-const supabase = require('@/lib/supabase');
+const supabase = isSupabase ? require('@/lib/supabase') : null;
+const sqlite = (!isSupabase && db.getMode() !== 'mysql') ? require('@/lib/sqlite') : null;
