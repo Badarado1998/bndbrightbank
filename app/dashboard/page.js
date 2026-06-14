@@ -518,9 +518,14 @@ export default function DashboardPage() {
                 <div className="container px-4">
                     <div className="navbar-brand d-flex align-items-center">
                         <img
-                            src="/pnd_logo.png"
+                            src="/pnd-logo.png"
                             alt="PND Bank"
-                            style={{ height: '42px', width: 'auto', objectFit: 'contain', filter: 'brightness(1.05)' }}
+                            style={{
+                                height: '42px',
+                                width: 'auto',
+                                objectFit: 'contain',
+                                filter: 'brightness(1.05)',
+                            }}
                         />
                     </div>
 

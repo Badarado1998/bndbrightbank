@@ -121,11 +121,16 @@ export default function LoginPage() {
                         borderRight: '1px solid rgba(255, 255, 255, 0.08)'
                     }}>
                         <div>
-                            <div className="mb-4">
+                            <div className="d-flex align-items-center mb-4">
                                 <img
-                                    src="/pnd_logo.png"
+                                    src="/pnd-logo.png"
                                     alt="PND Bank"
-                                    style={{ height: '52px', width: 'auto', objectFit: 'contain', filter: 'brightness(1.05)' }}
+                                    style={{
+                                        height: '52px',
+                                        width: 'auto',
+                                        objectFit: 'contain',
+                                        filter: 'brightness(1.05)',
+                                    }}
                                 />
                             </div>
                             <h1 className="display-6 fw-bold lh-sm mb-3" style={{
