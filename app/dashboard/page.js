@@ -380,6 +380,67 @@ export default function DashboardPage() {
         }
     };
 
+    const handleWithdrawalClick = () => {
+        if (window.Swal) {
+            window.Swal.fire({
+                title: 'Select Withdrawal Method',
+                html: `
+                    <div class="d-flex flex-column gap-3 mt-3">
+                        <button id="withdraw-bank-btn" class="btn text-white py-3 px-4 fw-bold d-flex align-items-center justify-content-between" style="background: linear-gradient(135deg, #6366f1 0%, #818cf8 100%); border: none; border-radius: 12px; transition: transform 0.2s;">
+                            <span class="d-flex align-items-center gap-3">
+                                <i class="fa-solid fa-building-columns fs-4"></i>
+                                <span class="text-start">
+                                    <span class="d-block fw-bold text-white" style="font-size: 16px;">1. Withdrawal to Bank Account</span>
+                                    <span class="d-block small text-white-50" style="font-weight: normal; font-size: 12px;">Transfer directly to your local bank</span>
+                                </span>
+                            </span>
+                            <i class="fa-solid fa-chevron-right small text-white"></i>
+                        </button>
+                        <button id="withdraw-card-btn" class="btn text-dark py-3 px-4 fw-bold d-flex align-items-center justify-content-between" style="background: linear-gradient(135deg, #eab308 0%, #f59e0b 100%); border: none; border-radius: 12px; transition: transform 0.2s;">
+                            <span class="d-flex align-items-center gap-3">
+                                <i class="fa-solid fa-credit-card fs-4"></i>
+                                <span class="text-start">
+                                    <span class="d-block fw-bold text-dark" style="font-size: 16px;">2. Withdrawal to Debit Card</span>
+                                    <span class="d-block small text-dark-50" style="font-weight: normal; font-size: 12px;">Withdraw funds to your debit/credit card</span>
+                                </span>
+                            </span>
+                            <i class="fa-solid fa-chevron-right small text-dark"></i>
+                        </button>
+                    </div>
+                `,
+                showConfirmButton: false,
+                showCloseButton: true,
+                background: '#1e293b',
+                color: '#fff',
+                customClass: {
+                    popup: 'border border-secondary rounded-4'
+                },
+                didOpen: () => {
+                    const bankBtn = document.getElementById('withdraw-bank-btn');
+                    const cardBtn = document.getElementById('withdraw-card-btn');
+                    if (bankBtn) {
+                        bankBtn.addEventListener('click', () => {
+                            window.Swal.close();
+                            setWithdrawMethod('bank');
+                            setWithdrawError('');
+                            setShowWithdraw(true);
+                        });
+                    }
+                    if (cardBtn) {
+                        cardBtn.addEventListener('click', () => {
+                            window.Swal.close();
+                            setWithdrawMethod('card');
+                            setWithdrawError('');
+                            setShowWithdraw(true);
+                        });
+                    }
+                }
+            });
+        } else {
+            setShowWithdraw(true);
+        }
+    };
+
     if (loading) {
         return (
             <div className="min-vh-100 d-flex flex-column align-items-center justify-content-center text-white" style={{ background: '#070a13' }}>
@@ -670,7 +731,7 @@ export default function DashboardPage() {
                                             <i className="fa-solid fa-arrow-down-long text-success"></i>
                                             Deposit USD
                                         </button>
-                                        <button onClick={() => setShowWithdraw(true)} className="btn border-0 py-3 px-4 fw-bold text-white flex-grow-1 d-flex align-items-center justify-content-center gap-2" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '14px' }}>
+                                        <button onClick={handleWithdrawalClick} className="btn border-0 py-3 px-4 fw-bold text-white flex-grow-1 d-flex align-items-center justify-content-center gap-2" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '14px' }}>
                                             <i className="fa-solid fa-arrow-up-long text-warning"></i>
                                             Withdrawal
                                         </button>
