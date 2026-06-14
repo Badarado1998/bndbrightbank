@@ -16,6 +16,11 @@ export async function POST(request) {
             return NextResponse.json({ error: "Missing required fields (userId, title, message)." }, { status: 400 });
         }
 
+        const user = await db.getUserById(userId);
+        if (!user) {
+            return NextResponse.json({ error: "User not found." }, { status: 404 });
+        }
+
         await db.createNotification({ userId, title, message });
 
         // Audit Log
