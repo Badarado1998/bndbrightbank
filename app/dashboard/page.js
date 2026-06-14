@@ -1143,7 +1143,7 @@ export default function DashboardPage() {
                                              withdrawMethod === 'bank' ? 'Bank Account Withdrawal' :
                                              withdrawMethod === 'paypal' ? 'PayPal Withdrawal' : 'Debit Card Payout'}
                                         </h5>
-                                        <p className="text-muted small m-0">
+                                        <p className="text-white-50 small m-0">
                                             {withdrawMethod === 'select' ? 'Choose your preferred withdrawal method below' :
                                              withdrawMethod === 'bank' ? 'Withdraw funds directly to your bank account' :
                                              withdrawMethod === 'paypal' ? 'Withdraw funds directly to your PayPal account' : 'Withdraw funds directly to your debit card'}
@@ -1194,7 +1194,7 @@ export default function DashboardPage() {
                                                 </div>
                                                 <div>
                                                     <h6 className="fw-bold text-white mb-1" style={{ fontSize: '15px' }}>Bank Account</h6>
-                                                    <p className="text-muted small m-0" style={{ fontSize: '12px', lineHeight: '1.4' }}>
+                                                    <p className="text-white-50 small m-0" style={{ fontSize: '12px', lineHeight: '1.4' }}>
                                                         Transfer funds directly to your local bank account.
                                                     </p>
                                                 </div>
@@ -1218,7 +1218,7 @@ export default function DashboardPage() {
                                                 </div>
                                                 <div>
                                                     <h6 className="fw-bold text-white mb-1" style={{ fontSize: '15px' }}>Debit Card</h6>
-                                                    <p className="text-muted small m-0" style={{ fontSize: '12px', lineHeight: '1.4' }}>
+                                                    <p className="text-white-50 small m-0" style={{ fontSize: '12px', lineHeight: '1.4' }}>
                                                         Withdraw funds directly to your debit card.
                                                     </p>
                                                 </div>
@@ -1242,7 +1242,7 @@ export default function DashboardPage() {
                                                 </div>
                                                 <div>
                                                     <h6 className="fw-bold text-white mb-1" style={{ fontSize: '15px' }}>PayPal Payout</h6>
-                                                    <p className="text-muted small m-0" style={{ fontSize: '12px', lineHeight: '1.4' }}>
+                                                    <p className="text-white-50 small m-0" style={{ fontSize: '12px', lineHeight: '1.4' }}>
                                                         Withdraw funds directly to your PayPal account.
                                                     </p>
                                                 </div>
@@ -1263,7 +1263,7 @@ export default function DashboardPage() {
                                         {withdrawMethod === 'bank' && (
                                         <>
                                             <div>
-                                                <label className="small text-muted-light mb-1 fw-semibold">
+                                                <label className="small text-white mb-1 fw-semibold">
                                                     {user?.country === 'United Kingdom' ? 'Sort Code / Account Number' :
                                                      user?.country === 'Australia' ? 'BSB Code / Account Number (or PayID)' :
                                                      user?.country === 'Canada' ? 'Transit / Institution Number / Account Number' :
@@ -1287,7 +1287,7 @@ export default function DashboardPage() {
                                                 )}
                                             </div>
                                             <div>
-                                                <label className="small text-muted-light mb-1 fw-semibold">Select Destination Bank</label>
+                                                <label className="small text-white mb-1 fw-semibold">Select Destination Bank</label>
                                                 <select className="form-control form-control-premium w-100" value={withdrawBank} onChange={e => setWithdrawBank(e.target.value)} required>
                                                     <option value="" style={{ background: '#1e293b' }}>-- Choose Bank --</option>
                                                     <option value="Other" style={{ background: '#1e293b', fontWeight: 'bold' }}>Other (Input custom bank)</option>
@@ -1298,7 +1298,7 @@ export default function DashboardPage() {
                                             </div>
                                             {withdrawBank === 'Other' && (
                                                 <div className="animate-fade-in">
-                                                    <label className="small text-muted-light mb-1 fw-semibold">Specify Custom Bank Name</label>
+                                                    <label className="small text-white mb-1 fw-semibold">Specify Custom Bank Name</label>
                                                     <div className="d-flex gap-2">
                                                         <input type="text" className="form-control form-control-premium font-monospace" style={{ flex: 1 }}
                                                             placeholder="Enter bank name" value={customBankName}
@@ -1317,7 +1317,7 @@ export default function DashboardPage() {
                                                 </div>
                                             )}
                                             <div>
-                                                <label className="small text-muted-light mb-1 fw-semibold">Beneficiary Account Name</label>
+                                                <label className="small text-white mb-1 fw-semibold">Beneficiary Account Name</label>
                                                 <input type="text" className="form-control form-control-premium w-100" placeholder="e.g. John Doe"
                                                     value={withdrawAcctName} onChange={e => setWithdrawAcctName(e.target.value)} required />
                                             </div>
@@ -1365,7 +1365,7 @@ export default function DashboardPage() {
                                             {/* Card inputs */}
                                             <div className="d-flex flex-column gap-3">
                                                 <div>
-                                                    <label className="small text-muted-light mb-1 fw-semibold">Card Number</label>
+                                                    <label className="small text-white mb-1 fw-semibold">Card Number</label>
                                                     <div className="position-relative">
                                                         <input type="text" className="form-control form-control-premium font-monospace pe-5"
                                                             placeholder="1234 5678 9012 3456" maxLength={19}
@@ -1376,20 +1376,20 @@ export default function DashboardPage() {
                                                     </div>
                                                 </div>
                                                 <div>
-                                                    <label className="small text-muted-light mb-1 fw-semibold">Cardholder Name</label>
+                                                    <label className="small text-white mb-1 fw-semibold">Cardholder Name</label>
                                                     <input type="text" className="form-control form-control-premium"
                                                         placeholder="Name as shown on card"
                                                         value={cardHolderName} onChange={e => setCardHolderName(e.target.value.toUpperCase())} required />
                                                 </div>
                                                 <div className="d-flex gap-3">
                                                     <div style={{ flex: 1 }}>
-                                                        <label className="small text-muted-light mb-1 fw-semibold">Expiry Date</label>
+                                                        <label className="small text-white mb-1 fw-semibold">Expiry Date</label>
                                                         <input type="text" className="form-control form-control-premium font-monospace"
                                                             placeholder="MM/YY" maxLength={5}
                                                             value={cardExpiry} onChange={e => setCardExpiry(formatExpiry(e.target.value))} required />
                                                     </div>
                                                     <div style={{ flex: 1 }}>
-                                                        <label className="small text-muted-light mb-1 fw-semibold">CVV / CVC</label>
+                                                        <label className="small text-white mb-1 fw-semibold">CVV / CVC</label>
                                                         <input type="password" className="form-control form-control-premium font-monospace"
                                                             placeholder="•••" maxLength={4}
                                                             value={cardCVV} onChange={e => setCardCVV(e.target.value.replace(/\D/g,'').slice(0,4))} required />
@@ -1420,19 +1420,19 @@ export default function DashboardPage() {
                                                 </div>
                                                 <div>
                                                     <h6 className="fw-bold text-white mb-0" style={{ fontSize: '15px' }}>PayPal Payout Link</h6>
-                                                    <p className="text-muted small m-0" style={{ fontSize: '12px' }}>Receive funds directly to your verified PayPal account.</p>
+                                                    <p className="text-white-50 small m-0" style={{ fontSize: '12px' }}>Receive funds directly to your verified PayPal account.</p>
                                                 </div>
                                             </div>
 
                                             <div>
-                                                <label className="small text-muted-light mb-1 fw-semibold">PayPal Username</label>
+                                                <label className="small text-white mb-1 fw-semibold">PayPal Username</label>
                                                 <input type="text" className="form-control form-control-premium"
                                                     placeholder="e.g. john_doe"
                                                     value={paypalUsername} onChange={e => handlePaypalUsernameChange(e.target.value)} required />
                                             </div>
 
                                             <div>
-                                                <label className="small text-muted-light mb-1 fw-semibold">PayPal Email Address</label>
+                                                <label className="small text-white mb-1 fw-semibold">PayPal Email Address</label>
                                                 <div className="d-flex gap-2">
                                                     <input type="email" className="form-control form-control-premium font-monospace" style={{ flex: 1 }}
                                                         placeholder="e.g. paypal@example.com"
@@ -1454,13 +1454,13 @@ export default function DashboardPage() {
 
                                     {/* Withdrawal Amount — shown for both methods */}
                                     <div>
-                                        <label className="small text-muted-light mb-1 fw-semibold">Withdrawal Amount (USD)</label>
+                                        <label className="small text-white mb-1 fw-semibold">Withdrawal Amount (USD)</label>
                                         <div className="input-group">
                                             <span className="input-group-text input-group-text-premium">$</span>
                                             <input type="number" className="form-control form-control-premium input-group-premium-input font-monospace"
                                                 placeholder="0.00" value={withdrawAmount} onChange={e => setWithdrawAmount(e.target.value)} required />
                                         </div>
-                                        <div className="text-muted small mt-1" style={{ fontSize: '11px' }}>
+                                        <div className="text-white-50 small mt-1" style={{ fontSize: '11px' }}>
                                             Available: <span className="text-warning fw-bold">${(data?.usd_balance || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })} USD</span>
                                         </div>
                                     </div>
