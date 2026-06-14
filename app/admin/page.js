@@ -357,8 +357,12 @@ export default function AdminDashboardPage() {
 
                 {/* Sidebar */}
                 <aside className="main-sidebar sidebar-dark-primary elevation-4" style={{ minHeight: '100vh' }}>
-                    <div className="brand-link text-center border-bottom border-secondary">
-                        <span className="brand-text font-weight-light font-weight-bold" style={{ letterSpacing: '1.5px' }}>PND BANK HQ</span>
+                    <div className="brand-link text-center border-bottom border-secondary py-3" style={{ background: 'rgba(15, 23, 42, 0.8)' }}>
+                        <img
+                            src="/pnd_logo.png"
+                            alt="PND Bank HQ"
+                            style={{ height: '38px', width: 'auto', objectFit: 'contain', filter: 'brightness(1.05)' }}
+                        />
                     </div>
 
                     <div className="sidebar py-3">

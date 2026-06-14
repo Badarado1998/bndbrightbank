@@ -121,15 +121,12 @@ export default function LoginPage() {
                         borderRight: '1px solid rgba(255, 255, 255, 0.08)'
                     }}>
                         <div>
-                            <div className="d-flex align-items-center gap-2 mb-4">
-                                <div className="rounded-circle d-flex align-items-center justify-content-center" style={{
-                                    width: '40px',
-                                    height: '40px',
-                                    background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)'
-                                }}>
-                                    <i className="fa-solid fa-building-columns text-white fs-5"></i>
-                                </div>
-                                <span className="fs-4 fw-bold tracking-wide" style={{ letterSpacing: '1px' }}>PND BANK</span>
+                            <div className="mb-4">
+                                <img
+                                    src="/pnd_logo.png"
+                                    alt="PND Bank"
+                                    style={{ height: '52px', width: 'auto', objectFit: 'contain', filter: 'brightness(1.05)' }}
+                                />
                             </div>
                             <h1 className="display-6 fw-bold lh-sm mb-3" style={{
                                 background: 'linear-gradient(to right, #ffffff, #c084fc)',

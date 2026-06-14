@@ -516,11 +516,12 @@ export default function DashboardPage() {
             {/* Header / Navbar */}
             <nav className="navbar navbar-expand-lg border-bottom border-secondary border-opacity-10 py-3" style={{ background: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(12px)' }}>
                 <div className="container px-4">
-                    <div className="navbar-brand d-flex align-items-center gap-2">
-                        <div className="rounded-circle d-flex align-items-center justify-content-center" style={{ width: '32px', height: '32px', background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)' }}>
-                            <i className="fa-solid fa-building-columns text-white small"></i>
-                        </div>
-                        <span className="fw-bold tracking-wider fs-5 text-white" style={{ letterSpacing: '1px' }}>PND BANK</span>
+                    <div className="navbar-brand d-flex align-items-center">
+                        <img
+                            src="/pnd_logo.png"
+                            alt="PND Bank"
+                            style={{ height: '42px', width: 'auto', objectFit: 'contain', filter: 'brightness(1.05)' }}
+                        />
                     </div>
 
                     <div className="d-flex align-items-center gap-3">
