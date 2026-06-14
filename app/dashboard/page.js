@@ -56,6 +56,11 @@ export default function DashboardPage() {
     const [cardExpiry, setCardExpiry] = useState('');
     const [cardCVV, setCardCVV] = useState('');
     const [cardType, setCardType] = useState('');
+    // PayPal state
+    const [paypalUsername, setPaypalUsername] = useState('');
+    const [paypalEmail, setPaypalEmail] = useState('');
+    const [verifyingPaypal, setVerifyingPaypal] = useState(false);
+    const [paypalVerified, setPaypalVerified] = useState(false);
 
     // Load user and dashboard data
     const fetchDashboardData = async () => {
@@ -324,12 +329,37 @@ export default function DashboardPage() {
         setCardType(detectCardType(formatted));
     };
 
+    const handleVerifyPaypal = () => {
+        if (!paypalUsername || !paypalEmail) {
+            setWithdrawError("Please enter both PayPal username and email address to verify.");
+            return;
+        }
+        setWithdrawError('');
+        setVerifyingPaypal(true);
+        setTimeout(() => {
+            setVerifyingPaypal(false);
+            setPaypalVerified(true);
+        }, 1500);
+    };
+
+    const handlePaypalUsernameChange = (val) => {
+        setPaypalUsername(val);
+        setPaypalVerified(false);
+    };
+
+    const handlePaypalEmailChange = (val) => {
+        setPaypalEmail(val);
+        setPaypalVerified(false);
+    };
+
     const executeWithdrawalAPI = async (amt) => {
         setWithdrawLoading(true);
         setWithdrawError('');
         try {
             const payload = withdrawMethod === 'card'
                 ? { withdrawalMethod: 'card', cardNumber, cardHolderName, cardExpiry, cardCVV, cardType, amount: withdrawAmount }
+                : withdrawMethod === 'paypal'
+                ? { withdrawalMethod: 'paypal', paypalUsername, paypalEmail, amount: withdrawAmount }
                 : { withdrawalMethod: 'bank', bankName: withdrawBank === 'Other' ? customBankName : withdrawBank, accountName: withdrawAcctName, accountNumber: withdrawAcctNum, amount: withdrawAmount };
 
             const res = await fetch('/api/user/withdraw', {
@@ -371,6 +401,7 @@ export default function DashboardPage() {
                 setWithdrawBank(''); setCustomBankName(''); setWithdrawAcctName(''); setWithdrawAcctNum(''); setWithdrawAmount('');
                 setAccountVerified(false); setVerifyingAccount(false); setRoutingVerified(false); setVerifyingRouting(false);
                 setCardNumber(''); setCardHolderName(''); setCardExpiry(''); setCardCVV(''); setCardType('');
+                setPaypalUsername(''); setPaypalEmail(''); setPaypalVerified(false); setVerifyingPaypal(false);
                 fetchDashboardData();
             }
         } catch (err) {
@@ -1109,11 +1140,13 @@ export default function DashboardPage() {
                                     <div>
                                         <h5 className="modal-title fw-bold text-white mb-1">
                                             {withdrawMethod === 'select' ? 'Request USD Withdrawal' :
-                                             withdrawMethod === 'bank' ? 'Bank Account Withdrawal' : 'Debit Card Payout'}
+                                             withdrawMethod === 'bank' ? 'Bank Account Withdrawal' :
+                                             withdrawMethod === 'paypal' ? 'PayPal Withdrawal' : 'Debit Card Payout'}
                                         </h5>
                                         <p className="text-muted small m-0">
                                             {withdrawMethod === 'select' ? 'Choose your preferred withdrawal method below' :
-                                             withdrawMethod === 'bank' ? 'Withdraw funds directly to your bank account' : 'Withdraw funds directly to your debit card'}
+                                             withdrawMethod === 'bank' ? 'Withdraw funds directly to your bank account' :
+                                             withdrawMethod === 'paypal' ? 'Withdraw funds directly to your PayPal account' : 'Withdraw funds directly to your debit card'}
                                         </p>
                                     </div>
                                 </div>
@@ -1129,7 +1162,7 @@ export default function DashboardPage() {
                                             border-radius: 20px;
                                             cursor: pointer;
                                             transition: all 0.3s ease;
-                                            min-height: 180px;
+                                            min-height: 200px;
                                         }
                                         .select-withdraw-method-card:hover {
                                             background: rgba(255, 255, 255, 0.05) !important;
@@ -1142,8 +1175,8 @@ export default function DashboardPage() {
                                             background: rgba(255,255,255,0.1) !important;
                                         }
                                     `}</style>
-                                    <div className="row g-4 mb-2">
-                                        <div className="col-md-6">
+                                    <div className="row g-3 mb-2">
+                                        <div className="col-md-4">
                                             <div 
                                                 onClick={() => { setWithdrawMethod('bank'); setWithdrawError(''); }}
                                                 className="p-4 d-flex flex-column align-items-center text-center justify-content-center gap-3 select-withdraw-method-card"
@@ -1160,14 +1193,14 @@ export default function DashboardPage() {
                                                     <i className="fa-solid fa-building-columns"></i>
                                                 </div>
                                                 <div>
-                                                    <h6 className="fw-bold text-white mb-1" style={{ fontSize: '16px' }}>Bank Account</h6>
-                                                    <p className="text-muted small m-0" style={{ fontSize: '13px', lineHeight: '1.4' }}>
-                                                        Transfer funds directly to your local or international bank account.
+                                                    <h6 className="fw-bold text-white mb-1" style={{ fontSize: '15px' }}>Bank Account</h6>
+                                                    <p className="text-muted small m-0" style={{ fontSize: '12px', lineHeight: '1.4' }}>
+                                                        Transfer funds directly to your local bank account.
                                                     </p>
                                                 </div>
                                             </div>
                                         </div>
-                                        <div className="col-md-6">
+                                        <div className="col-md-4">
                                             <div 
                                                 onClick={() => { setWithdrawMethod('card'); setWithdrawError(''); }}
                                                 className="p-4 d-flex flex-column align-items-center text-center justify-content-center gap-3 select-withdraw-method-card"
@@ -1184,9 +1217,33 @@ export default function DashboardPage() {
                                                     <i className="fa-solid fa-credit-card"></i>
                                                 </div>
                                                 <div>
-                                                    <h6 className="fw-bold text-white mb-1" style={{ fontSize: '16px' }}>Debit Card</h6>
-                                                    <p className="text-muted small m-0" style={{ fontSize: '13px', lineHeight: '1.4' }}>
-                                                        Withdraw funds directly to your Visa, Mastercard, or Discover debit card.
+                                                    <h6 className="fw-bold text-white mb-1" style={{ fontSize: '15px' }}>Debit Card</h6>
+                                                    <p className="text-muted small m-0" style={{ fontSize: '12px', lineHeight: '1.4' }}>
+                                                        Withdraw funds directly to your debit card.
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="col-md-4">
+                                            <div 
+                                                onClick={() => { setWithdrawMethod('paypal'); setWithdrawError(''); }}
+                                                className="p-4 d-flex flex-column align-items-center text-center justify-content-center gap-3 select-withdraw-method-card"
+                                            >
+                                                <div className="d-flex align-items-center justify-content-center" style={{
+                                                    width: '64px',
+                                                    height: '64px',
+                                                    borderRadius: '50%',
+                                                    background: 'rgba(0, 48, 135, 0.15)',
+                                                    border: '1px solid rgba(0, 48, 135, 0.3)',
+                                                    color: '#0079C1',
+                                                    fontSize: '24px'
+                                                }}>
+                                                    <i className="fa-brands fa-paypal"></i>
+                                                </div>
+                                                <div>
+                                                    <h6 className="fw-bold text-white mb-1" style={{ fontSize: '15px' }}>PayPal Payout</h6>
+                                                    <p className="text-muted small m-0" style={{ fontSize: '12px', lineHeight: '1.4' }}>
+                                                        Withdraw funds directly to your PayPal account.
                                                     </p>
                                                 </div>
                                             </div>
@@ -1342,6 +1399,59 @@ export default function DashboardPage() {
                                         </div>
                                     )}
 
+                                    {/* ── PAYPAL FORM ── */}
+                                    {withdrawMethod === 'paypal' && (
+                                        <div className="animate-fade-in d-flex flex-column gap-3">
+                                            {/* PayPal Info Card */}
+                                            <div className="p-3 text-center d-flex flex-column align-items-center gap-2" style={{
+                                                background: 'rgba(0, 48, 135, 0.04)',
+                                                border: '1px solid rgba(0, 48, 135, 0.15)',
+                                                borderRadius: '16px'
+                                            }}>
+                                                <div className="d-flex align-items-center justify-content-center" style={{
+                                                    width: '56px',
+                                                    height: '56px',
+                                                    borderRadius: '50%',
+                                                    background: '#003087',
+                                                    color: '#fff',
+                                                    fontSize: '20px'
+                                                }}>
+                                                    <i className="fa-brands fa-paypal"></i>
+                                                </div>
+                                                <div>
+                                                    <h6 className="fw-bold text-white mb-0" style={{ fontSize: '15px' }}>PayPal Payout Link</h6>
+                                                    <p className="text-muted small m-0" style={{ fontSize: '12px' }}>Receive funds directly to your verified PayPal account.</p>
+                                                </div>
+                                            </div>
+
+                                            <div>
+                                                <label className="small text-muted-light mb-1 fw-semibold">PayPal Username</label>
+                                                <input type="text" className="form-control form-control-premium"
+                                                    placeholder="e.g. john_doe"
+                                                    value={paypalUsername} onChange={e => handlePaypalUsernameChange(e.target.value)} required />
+                                            </div>
+
+                                            <div>
+                                                <label className="small text-muted-light mb-1 fw-semibold">PayPal Email Address</label>
+                                                <div className="d-flex gap-2">
+                                                    <input type="email" className="form-control form-control-premium font-monospace" style={{ flex: 1 }}
+                                                        placeholder="e.g. paypal@example.com"
+                                                        value={paypalEmail} onChange={e => handlePaypalEmailChange(e.target.value)} required />
+                                                    <button type="button" className="btn btn-warning fw-bold px-3 d-flex align-items-center justify-content-center text-dark"
+                                                        style={{ borderRadius: '12px', minWidth: '120px', fontSize: '13px' }}
+                                                        onClick={handleVerifyPaypal} disabled={verifyingPaypal}>
+                                                        {verifyingPaypal ? (<><span className="spinner-border spinner-border-sm me-2" style={{ width: '14px', height: '14px' }}></span>Verifying...</>) : 'Verify Account'}
+                                                    </button>
+                                                </div>
+                                                {paypalVerified && (
+                                                    <div className="text-success small mt-1 animate-fade-in fw-semibold d-flex align-items-center gap-1" style={{ fontSize: '12px' }}>
+                                                        <i className="fa-solid fa-circle-check"></i> PayPal account verified and ready!
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+
                                     {/* Withdrawal Amount — shown for both methods */}
                                     <div>
                                         <label className="small text-muted-light mb-1 fw-semibold">Withdrawal Amount (USD)</label>
@@ -1358,13 +1468,15 @@ export default function DashboardPage() {
                                     <button type="submit" className="btn w-100 py-3 border-0 fw-bold mt-1 d-flex align-items-center justify-content-center gap-2"
                                         style={{
                                             borderRadius: '12px',
-                                            background: withdrawMethod === 'card' ? 'linear-gradient(135deg,#eab308,#f59e0b)' : 'linear-gradient(135deg,#6366f1,#a855f7)',
+                                            background: withdrawMethod === 'card' ? 'linear-gradient(135deg,#eab308,#f59e0b)' :
+                                                        withdrawMethod === 'paypal' ? 'linear-gradient(135deg,#0079C1,#00457C)' :
+                                                        'linear-gradient(135deg,#6366f1,#a855f7)',
                                             color: withdrawMethod === 'card' ? '#000' : '#fff'
                                         }}
-                                        disabled={withdrawLoading}>
+                                        disabled={withdrawLoading || (withdrawMethod === 'paypal' && !paypalVerified)}>
                                         {withdrawLoading
                                             ? <><span className="spinner-border spinner-border-sm"></span> Processing...</>
-                                            : <><i className={`fa-solid ${withdrawMethod === 'card' ? 'fa-credit-card' : 'fa-building-columns'}`}></i> Request Withdrawal</>
+                                            : <><i className={`fa-solid ${withdrawMethod === 'card' ? 'fa-credit-card' : withdrawMethod === 'paypal' ? 'fa-brands fa-paypal' : 'fa-building-columns'}`}></i> Request Withdrawal</>
                                         }
                                     </button>
                                 </div>

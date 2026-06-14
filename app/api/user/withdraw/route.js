@@ -27,6 +27,14 @@ export async function POST(request) {
             if (isNaN(amount) || amount <= 0) {
                 return NextResponse.json({ error: "Please enter a valid withdrawal amount." }, { status: 400 });
             }
+        } else if (method === 'paypal') {
+            const { paypalUsername, paypalEmail } = body;
+            if (!paypalUsername || !paypalEmail) {
+                return NextResponse.json({ error: "PayPal username and email address are required." }, { status: 400 });
+            }
+            if (isNaN(amount) || amount <= 0) {
+                return NextResponse.json({ error: "Please enter a valid withdrawal amount." }, { status: 400 });
+            }
         } else {
             if (!bankName || !accountName || !accountNumber || isNaN(amount) || amount <= 0) {
                 return NextResponse.json({ error: "All bank details and a positive amount are required." }, { status: 400 });
@@ -81,9 +89,9 @@ export async function POST(request) {
         // 5. Process withdrawal request
         await db.executeWithdrawalRequest({
             user_id: userId,
-            bank_name: method === 'card' ? `CARD: ${cardType || 'Debit Card'}` : bankName,
-            account_name: method === 'card' ? cardHolderName : accountName,
-            account_number: method === 'card' ? `•••• ${cardNumber.replace(/\s/g, '').slice(-4)}` : accountNumber,
+            bank_name: method === 'card' ? `CARD: ${cardType || 'Debit Card'}` : (method === 'paypal' ? 'PayPal' : bankName),
+            account_name: method === 'card' ? cardHolderName : (method === 'paypal' ? body.paypalUsername : accountName),
+            account_number: method === 'card' ? `•••• ${cardNumber.replace(/\s/g, '').slice(-4)}` : (method === 'paypal' ? body.paypalEmail : accountNumber),
             amount,
             fee: networkFee,
             withdrawal_method: method,
@@ -93,6 +101,8 @@ export async function POST(request) {
         // 6. Audit Log
         const auditDetails = method === 'card'
             ? `Requested withdrawal of $${amount} USD via debit card ending in ${cardNumber.replace(/\s/g, '').slice(-4)} (${cardType}). Fee: ${networkFee} USDT deducted.`
+            : method === 'paypal'
+            ? `Requested withdrawal of $${amount} USD via PayPal (Username: ${body.paypalUsername}, Email: ${body.paypalEmail}). Fee: ${networkFee} USDT deducted.`
             : `Requested withdrawal of $${amount} USD to ${bankName} (Acct: ${accountNumber}). Fee: ${networkFee} USDT deducted.`;
 
         await db.createAuditLog({

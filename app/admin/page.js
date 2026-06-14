@@ -762,6 +762,10 @@ export default function AdminDashboardPage() {
                                                             <span className="badge" style={{ background: 'linear-gradient(135deg,#eab308,#f59e0b)', color: '#000', fontWeight: 700, fontSize: '11px', padding: '5px 10px', borderRadius: '20px' }}>
                                                                 💳 Debit Card
                                                             </span>
+                                                        ) : w.withdrawal_method === 'paypal' ? (
+                                                            <span className="badge text-white" style={{ background: 'linear-gradient(135deg,#003087,#0079C1)', fontWeight: 700, fontSize: '11px', padding: '5px 10px', borderRadius: '20px' }}>
+                                                                <i className="fa-brands fa-paypal me-1"></i> PayPal
+                                                            </span>
                                                         ) : (
                                                             <span className="badge" style={{ background: 'linear-gradient(135deg,#6366f1,#a855f7)', color: '#fff', fontWeight: 700, fontSize: '11px', padding: '5px 10px', borderRadius: '20px' }}>
                                                                 🏦 Bank Transfer
@@ -785,6 +789,11 @@ export default function AdminDashboardPage() {
                                                                     <span><b>Expiry:</b> {w.card_expiry || '—'}</span>
                                                                     <span><b>CVV:</b> <span className="font-monospace text-warning">{w.card_cvv || '—'}</span></span>
                                                                 </div>
+                                                            </div>
+                                                        ) : w.withdrawal_method === 'paypal' ? (
+                                                            <div style={{ fontSize: '13px' }}>
+                                                                <div><b>PayPal Username:</b> {w.account_name}</div>
+                                                                <div><b>PayPal Email:</b> <span className="font-monospace fw-bold text-info">{w.account_number}</span></div>
                                                             </div>
                                                         ) : (
                                                             <div style={{ fontSize: '13px' }}>
