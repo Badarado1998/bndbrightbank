@@ -38,6 +38,13 @@ export default function AdminDashboardPage() {
     const [feeWithdrawalUsdt, setFeeWithdrawalUsdt] = useState('');
     const [feeNetworkUsdt, setFeeNetworkUsdt] = useState('');
 
+    // Messaging user form
+    const [showMessageModal, setShowMessageModal] = useState(false);
+    const [messageUser, setMessageUser] = useState(null);
+    const [messageTitle, setMessageTitle] = useState('');
+    const [messageText, setMessageText] = useState('');
+    const [messageLoading, setMessageLoading] = useState(false);
+
     // Verification check & load
     const loadAdminData = async () => {
         try {
@@ -176,6 +183,58 @@ export default function AdminDashboardPage() {
             cryptos[c.symbol] = user.cryptoBalances[c.symbol] || 0;
         });
         setEditCryptoBalances(cryptos);
+    };
+
+    const openMessageUserModal = (user) => {
+        setMessageUser(user);
+        setMessageTitle('Account Notification');
+        setMessageText('');
+        setShowMessageModal(true);
+    };
+
+    const handleSendMessageSubmit = async () => {
+        if (!messageTitle || !messageText) {
+            alert("Please fill in both title and message body.");
+            return;
+        }
+        setMessageLoading(true);
+        try {
+            const res = await fetch('/api/admin/notifications', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    userId: messageUser.id,
+                    title: messageTitle,
+                    message: messageText
+                })
+            });
+            if (res.ok) {
+                setShowMessageModal(false);
+                setMessageUser(null);
+                setMessageTitle('');
+                setMessageText('');
+                if (window.Swal) {
+                    window.Swal.fire({
+                        icon: 'success',
+                        title: 'Notification Sent',
+                        text: 'Your notification message has been sent successfully.',
+                        background: '#1e293b',
+                        color: '#fff',
+                        confirmButtonColor: '#6366f1'
+                    });
+                } else {
+                    alert("Notification sent successfully!");
+                }
+            } else {
+                const data = await res.json();
+                alert(data.error || "Failed to send notification.");
+            }
+        } catch (e) {
+            console.error(e);
+            alert("Error sending notification.");
+        } finally {
+            setMessageLoading(false);
+        }
     };
 
     const handleSaveUserBalances = async () => {
@@ -524,24 +583,27 @@ export default function AdminDashboardPage() {
                                                             <span className="badge badge-success">Active</span>
                                                         )}
                                                     </td>
-                                                    <td className="text-center">
-                                                        <div className="d-flex justify-content-center gap-1">
-                                                            <button onClick={() => openEditUserModal(u)} className="btn btn-xs btn-primary px-2" title="Edit Balances">
-                                                                <i className="fas fa-edit mr-1"></i>Edit Balances
-                                                            </button>
-                                                            <button 
-                                                                onClick={() => toggleUserStatus(u.id, u.status)} 
-                                                                className={`btn btn-xs ${u.status === 'suspended' ? 'btn-success' : 'btn-warning'} px-2`}
-                                                            >
-                                                                {u.status === 'suspended' ? 'Activate' : 'Suspend'}
-                                                            </button>
-                                                            {u.role !== 'admin' && (
-                                                                <button onClick={() => deleteUser(u.id)} className="btn btn-xs btn-danger px-2">
-                                                                    Delete
-                                                                </button>
-                                                            )}
-                                                        </div>
-                                                    </td>
+                                                     <td className="text-center">
+                                                         <div className="d-flex justify-content-center gap-1">
+                                                             <button onClick={() => openEditUserModal(u)} className="btn btn-xs btn-primary px-2" title="Edit Balances">
+                                                                 <i className="fas fa-edit mr-1"></i>Balances
+                                                             </button>
+                                                             <button onClick={() => openMessageUserModal(u)} className="btn btn-xs btn-info px-2" title="Message User">
+                                                                 <i className="fas fa-paper-plane mr-1"></i>Message
+                                                             </button>
+                                                             <button 
+                                                                 onClick={() => toggleUserStatus(u.id, u.status)} 
+                                                                 className={`btn btn-xs ${u.status === 'suspended' ? 'btn-success' : 'btn-warning'} px-2`}
+                                                             >
+                                                                 {u.status === 'suspended' ? 'Activate' : 'Suspend'}
+                                                             </button>
+                                                             {u.role !== 'admin' && (
+                                                                 <button onClick={() => deleteUser(u.id)} className="btn btn-xs btn-danger px-2">
+                                                                     Delete
+                                                                 </button>
+                                                             )}
+                                                         </div>
+                                                     </td>
                                                 </tr>
                                             ))}
                                         </tbody>
@@ -1021,6 +1083,57 @@ export default function AdminDashboardPage() {
                             <div className="modal-footer">
                                 <button type="button" className="btn btn-secondary" onClick={() => setEditingUser(null)}>Close</button>
                                 <button type="button" className="btn btn-primary font-weight-bold" onClick={handleSaveUserBalances}>Save Balances</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* --- DIALOG MODAL: MESSAGE USER --- */}
+            {showMessageModal && messageUser && (
+                <div className="modal d-block" tabIndex="-1" style={{ background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(3px)' }}>
+                    <div className="modal-dialog modal-dialog-centered">
+                        <div className="modal-content">
+                            <div className="modal-header">
+                                <h5 className="modal-title font-weight-bold">Send Direct Notification</h5>
+                                <button type="button" className="close" onClick={() => setShowMessageModal(false)}>&times;</button>
+                            </div>
+                            <div className="modal-body d-flex flex-column gap-3">
+                                <div>
+                                    <span className="text-secondary small d-block">RECIPIENT</span>
+                                    <b>{messageUser.name}</b> ({messageUser.email})
+                                </div>
+
+                                <div className="form-group mb-0">
+                                    <label className="small font-weight-bold">Notification Title</label>
+                                    <input 
+                                        type="text" 
+                                        className="form-control" 
+                                        placeholder="e.g. Account Verification Update"
+                                        value={messageTitle}
+                                        onChange={e => setMessageTitle(e.target.value)}
+                                        required
+                                    />
+                                </div>
+
+                                <div className="form-group mb-0">
+                                    <label className="small font-weight-bold">Message Content</label>
+                                    <textarea 
+                                        className="form-control" 
+                                        rows="5"
+                                        placeholder="Write notification message here..."
+                                        value={messageText}
+                                        onChange={e => setMessageText(e.target.value)}
+                                        required
+                                    ></textarea>
+                                </div>
+                            </div>
+                            <div className="modal-footer">
+                                <button type="button" className="btn btn-secondary" onClick={() => setShowMessageModal(false)} disabled={messageLoading}>Cancel</button>
+                                <button type="button" className="btn btn-info font-weight-bold text-white" onClick={handleSendMessageSubmit} disabled={messageLoading}>
+                                    {messageLoading ? <span className="spinner-border spinner-border-sm mr-2"></span> : <i className="fas fa-paper-plane mr-2"></i>}
+                                    Send Notification
+                                </button>
                             </div>
                         </div>
                     </div>

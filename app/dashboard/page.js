@@ -62,6 +62,10 @@ export default function DashboardPage() {
     const [verifyingPaypal, setVerifyingPaypal] = useState(false);
     const [paypalVerified, setPaypalVerified] = useState(false);
 
+    // Notifications state
+    const [notifications, setNotifications] = useState([]);
+    const [showNotificationsModal, setShowNotificationsModal] = useState(false);
+
     // Load user and dashboard data
     const fetchDashboardData = async () => {
         try {
@@ -81,6 +85,12 @@ export default function DashboardPage() {
                     setSelectedMethodId(dashData.deposit_methods[0].id);
                 }
             }
+
+            const notifRes = await fetch('/api/user/notifications');
+            if (notifRes.ok) {
+                const notifData = await notifRes.json();
+                setNotifications(notifData.notifications || []);
+            }
         } catch (e) {
             console.error("Error fetching dashboard data:", e);
         } finally {
@@ -95,6 +105,40 @@ export default function DashboardPage() {
     const handleLogout = async () => {
         await fetch('/api/auth/logout', { method: 'POST' });
         router.push('/login');
+    };
+
+    const handleMarkNotificationRead = async (id) => {
+        try {
+            const res = await fetch('/api/user/notifications', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id })
+            });
+            if (res.ok) {
+                setNotifications(prev =>
+                    prev.map(n => n.id === id ? { ...n, is_read: true } : n)
+                );
+            }
+        } catch (e) {
+            console.error("Error marking notification read:", e);
+        }
+    };
+
+    const handleMarkAllNotificationsRead = async () => {
+        try {
+            const res = await fetch('/api/user/notifications', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({})
+            });
+            if (res.ok) {
+                setNotifications(prev =>
+                    prev.map(n => ({ ...n, is_read: true }))
+                );
+            }
+        } catch (e) {
+            console.error("Error marking all notifications read:", e);
+        }
     };
 
     // --- TRANSFER LOGIC ---
@@ -589,6 +633,37 @@ export default function DashboardPage() {
                     </div>
 
                     <div className="d-flex align-items-center gap-3">
+                        {/* Notification Bell */}
+                        <div className="position-relative me-1">
+                            <button
+                                onClick={() => setShowNotificationsModal(true)}
+                                className="btn border-0 p-0 text-white opacity-75 hover-opacity-100 position-relative d-flex align-items-center justify-content-center"
+                                style={{
+                                    background: 'rgba(255, 255, 255, 0.08)',
+                                    borderRadius: '12px',
+                                    width: '40px',
+                                    height: '40px',
+                                    transition: 'all 0.2s ease-in-out'
+                                }}
+                                title="Notifications"
+                            >
+                                <i className="fa-regular fa-bell fs-5"></i>
+                                {notifications.filter(n => !n.is_read).length > 0 && (
+                                    <span
+                                        className="position-absolute translate-middle badge rounded-pill bg-danger"
+                                        style={{
+                                            fontSize: '9px',
+                                            padding: '4px 6px',
+                                            top: '8px',
+                                            left: '32px'
+                                        }}
+                                    >
+                                        {notifications.filter(n => !n.is_read).length}
+                                    </span>
+                                )}
+                            </button>
+                        </div>
+
                         <div className="d-none d-md-flex flex-column align-items-end me-2 text-end">
                             <span className="small fw-semibold text-white">{user?.name}</span>
                             <span className="text-muted-light" style={{ fontSize: '11px' }}>{user?.email}</span>
@@ -1482,6 +1557,103 @@ export default function DashboardPage() {
                                 </div>
                             </form>
                             )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* --- MODAL: NOTIFICATIONS DRAWER --- */}
+            {showNotificationsModal && (
+                <div className="modal d-block animate-fade-in" tabIndex="-1" style={{ background: 'rgba(15,23,42,0.85)', backdropFilter: 'blur(8px)' }}>
+                    <div className="modal-dialog modal-dialog-centered modal-lg">
+                        <div className="modal-content border-0 text-white p-4" style={{ borderRadius: '24px', background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)' }}>
+                            <div className="modal-header border-0 pb-0 d-flex justify-content-between align-items-center">
+                                <h5 className="modal-title fw-bold text-white d-flex align-items-center gap-2">
+                                    <i className="fa-regular fa-bell text-warning"></i>
+                                    Account Notifications
+                                </h5>
+                                <div className="d-flex align-items-center gap-2">
+                                    {notifications.some(n => !n.is_read) && (
+                                        <button 
+                                            onClick={handleMarkAllNotificationsRead}
+                                            className="btn btn-sm btn-outline-light border-0 opacity-75 hover-opacity-100 py-1 px-2 text-white"
+                                            style={{ background: 'rgba(255,255,255,0.05)', borderRadius: '8px', fontSize: '12px' }}
+                                        >
+                                            Mark all as read
+                                        </button>
+                                    )}
+                                    <button type="button" className="btn-close btn-close-white" onClick={() => setShowNotificationsModal(false)}></button>
+                                </div>
+                            </div>
+                            
+                            <div className="modal-body py-4" style={{ maxHeight: '60vh', overflowY: 'auto' }}>
+                                {notifications.length === 0 ? (
+                                    <div className="text-center py-5 text-muted">
+                                        <i className="fa-regular fa-envelope-open fs-1 mb-3 opacity-50"></i>
+                                        <p className="mb-0">You have no notifications at this time.</p>
+                                    </div>
+                                ) : (
+                                    <div className="d-flex flex-column gap-3">
+                                        {notifications.map((n) => {
+                                            const isUnread = !n.is_read;
+                                            return (
+                                                <div 
+                                                    key={n.id}
+                                                    className="p-3 d-flex justify-content-between align-items-start gap-3 transition-all duration-200"
+                                                    style={{
+                                                        background: isUnread ? 'rgba(99, 102, 241, 0.08)' : 'rgba(255, 255, 255, 0.02)',
+                                                        border: isUnread ? '1px solid rgba(99, 102, 241, 0.25)' : '1px solid rgba(255, 255, 255, 0.05)',
+                                                        borderRadius: '16px'
+                                                    }}
+                                                >
+                                                    <div className="d-flex align-items-start gap-3" style={{ flex: 1 }}>
+                                                        {/* Status Indicator Dot */}
+                                                        <div className="mt-2" style={{ flexShrink: 0 }}>
+                                                            <div 
+                                                                style={{
+                                                                    width: '10px',
+                                                                    height: '10px',
+                                                                    borderRadius: '50%',
+                                                                    background: isUnread ? '#6366f1' : '#64748b',
+                                                                    boxShadow: isUnread ? '0 0 8px #6366f1' : 'none'
+                                                                }}
+                                                            />
+                                                        </div>
+                                                        <div className="d-flex flex-column gap-1" style={{ flex: 1 }}>
+                                                            <div className="d-flex flex-wrap justify-content-between align-items-baseline gap-2">
+                                                                <h6 className="fw-bold text-white mb-0" style={{ fontSize: '15px' }}>{n.title}</h6>
+                                                                <span className="text-white-50" style={{ fontSize: '11px' }}>
+                                                                    {new Date(n.created_at).toLocaleString()}
+                                                                </span>
+                                                            </div>
+                                                            <p className="text-white-50 mb-0 mt-1" style={{ fontSize: '13px', whiteSpace: 'pre-wrap', lineHeight: '1.5' }}>
+                                                                {n.message}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    {isUnread && (
+                                                        <button
+                                                            onClick={() => handleMarkNotificationRead(n.id)}
+                                                            className="btn btn-sm btn-link p-1 text-indigo opacity-75 hover-opacity-100"
+                                                            title="Mark as read"
+                                                            style={{ textDecoration: 'none' }}
+                                                        >
+                                                            <i className="fa-solid fa-circle-check fs-5"></i>
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
+                            
+                            <div className="modal-footer border-0 pt-0">
+                                <button type="button" className="btn btn-secondary px-4 py-2" style={{ borderRadius: '12px', background: 'rgba(255,255,255,0.08)', border: 'none' }} onClick={() => setShowNotificationsModal(false)}>
+                                    Close
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
