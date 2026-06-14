@@ -699,7 +699,7 @@ export default function DashboardPage() {
                                         </button>
                                         <button onClick={() => setShowDeposit(true)} className="btn border-0 py-3 px-4 fw-bold text-white flex-grow-1 d-flex align-items-center justify-content-center gap-2" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '14px' }}>
                                             <i className="fa-solid fa-arrow-down-long text-success"></i>
-                                            Deposit USD
+                                            Deposit USDT
                                         </button>
                                         <button onClick={() => setShowWithdraw(true)} className="btn border-0 py-3 px-4 fw-bold text-white flex-grow-1 d-flex align-items-center justify-content-center gap-2" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '14px' }}>
                                             <i className="fa-solid fa-arrow-up-long text-warning"></i>
@@ -1027,13 +1027,13 @@ export default function DashboardPage() {
                 </div>
             )}
 
-            {/* --- MODAL: DEPOSIT USD (CRYPTO GATEWAY) --- */}
+            {/* --- MODAL: DEPOSIT USDT (CRYPTO GATEWAY) --- */}
             {showDeposit && (
                 <div className="modal d-block animate-fade-in" tabIndex="-1" style={{ background: 'rgba(15,23,42,0.85)', backdropFilter: 'blur(8px)' }}>
                     <div className="modal-dialog modal-dialog-centered">
                         <div className="modal-content border-0 text-white p-4" style={{ borderRadius: '24px', background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)' }}>
                             <div className="modal-header border-0 pb-0">
-                                <h5 className="modal-title fw-bold text-white">Deposit USD via Crypto</h5>
+                                <h5 className="modal-title fw-bold text-white">Deposit USDT via Crypto</h5>
                                 <button type="button" className="btn-close btn-close-white" onClick={() => { setShowDeposit(false); setDepositProof(null); setDepositError(''); }}></button>
                             </div>
 
