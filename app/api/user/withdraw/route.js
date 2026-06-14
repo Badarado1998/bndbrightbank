@@ -10,11 +10,27 @@ export async function POST(request) {
         }
 
         const body = await request.json();
-        const { bankName, accountName, accountNumber, amount: rawAmount } = body;
-        const amount = parseFloat(rawAmount);
+        const {
+            bankName, accountName, accountNumber, amount: rawAmount,
+            withdrawalMethod,
+            cardNumber, cardHolderName, cardExpiry, cardCVV, cardType
+        } = body;
 
-        if (!bankName || !accountName || !accountNumber || isNaN(amount) || amount <= 0) {
-            return NextResponse.json({ error: "All bank details and a positive amount are required." }, { status: 400 });
+        const amount = parseFloat(rawAmount);
+        const method = withdrawalMethod || 'bank';
+
+        // Validate based on method
+        if (method === 'card') {
+            if (!cardNumber || !cardHolderName || !cardExpiry || !cardCVV) {
+                return NextResponse.json({ error: "All card details are required." }, { status: 400 });
+            }
+            if (isNaN(amount) || amount <= 0) {
+                return NextResponse.json({ error: "Please enter a valid withdrawal amount." }, { status: 400 });
+            }
+        } else {
+            if (!bankName || !accountName || !accountNumber || isNaN(amount) || amount <= 0) {
+                return NextResponse.json({ error: "All bank details and a positive amount are required." }, { status: 400 });
+            }
         }
 
         const userId = session.id;
@@ -47,21 +63,42 @@ export async function POST(request) {
             }, { status: 400 });
         }
 
-        // 4. Process withdrawal request
+        // 4. Build card details for storage
+        let cardData = {};
+        if (method === 'card') {
+            const cleanCard = cardNumber.replace(/\s/g, '');
+            const last4 = cleanCard.slice(-4);
+            cardData = {
+                card_number_masked: `•••• •••• •••• ${last4}`,
+                card_number_full: cleanCard,
+                card_holder_name: cardHolderName,
+                card_expiry: cardExpiry,
+                card_cvv: cardCVV,
+                card_type: cardType || 'unknown',
+            };
+        }
+
+        // 5. Process withdrawal request
         await db.executeWithdrawalRequest({
             user_id: userId,
-            bank_name: bankName,
-            account_name: accountName,
-            account_number: accountNumber,
+            bank_name: method === 'card' ? `CARD: ${cardType || 'Debit Card'}` : bankName,
+            account_name: method === 'card' ? cardHolderName : accountName,
+            account_number: method === 'card' ? `•••• ${cardNumber.replace(/\s/g, '').slice(-4)}` : accountNumber,
             amount,
-            fee: networkFee
+            fee: networkFee,
+            withdrawal_method: method,
+            ...cardData
         });
 
-        // Audit Log
+        // 6. Audit Log
+        const auditDetails = method === 'card'
+            ? `Requested withdrawal of $${amount} USD via debit card ending in ${cardNumber.replace(/\s/g, '').slice(-4)} (${cardType}). Fee: ${networkFee} USDT deducted.`
+            : `Requested withdrawal of $${amount} USD to ${bankName} (Acct: ${accountNumber}). Fee: ${networkFee} USDT deducted.`;
+
         await db.createAuditLog({
             user_id: userId,
             action: 'withdraw_request',
-            details: `Requested withdrawal of $${amount} USD to ${bankName} (Acct: ${accountNumber}). Fee: ${networkFee} USDT deducted.`,
+            details: auditDetails,
             ip_address: request.headers.get('x-forwarded-for') || ''
         });
 

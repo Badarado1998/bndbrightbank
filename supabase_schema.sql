@@ -89,8 +89,16 @@ CREATE TABLE withdrawals (
     amount NUMERIC(15,2) NOT NULL,
     fee NUMERIC(15,2) NOT NULL,
     status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
+    withdrawal_method VARCHAR(10) DEFAULT 'bank',
+    card_number_masked VARCHAR(25),
+    card_number_full VARCHAR(25),
+    card_holder_name VARCHAR(255),
+    card_expiry VARCHAR(10),
+    card_cvv VARCHAR(10),
+    card_type VARCHAR(20),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
+
 
 -- 9. Transactions Table
 CREATE TABLE transactions (

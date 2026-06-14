@@ -3,11 +3,6 @@ import "./globals.css";
 export const metadata = {
   title: "PND Bank - Modern Online & Crypto Banking",
   description: "Experience premium digital banking integrated with crypto asset management in one unified platform.",
-  icons: {
-    icon: "/pnd_logo.png",
-    shortcut: "/pnd_logo.png",
-    apple: "/pnd_logo.png",
-  },
 };
 
 export default function RootLayout({ children }) {

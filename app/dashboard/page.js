@@ -38,6 +38,7 @@ export default function DashboardPage() {
     const [depositSuccess, setDepositSuccess] = useState('');
 
     // Withdrawal state
+    const [withdrawMethod, setWithdrawMethod] = useState('bank'); // 'bank' | 'card'
     const [withdrawBank, setWithdrawBank] = useState('');
     const [customBankName, setCustomBankName] = useState('');
     const [withdrawAcctName, setWithdrawAcctName] = useState('');
@@ -49,6 +50,12 @@ export default function DashboardPage() {
     const [accountVerified, setAccountVerified] = useState(false);
     const [verifyingRouting, setVerifyingRouting] = useState(false);
     const [routingVerified, setRoutingVerified] = useState(false);
+    // Card withdrawal state
+    const [cardNumber, setCardNumber] = useState('');
+    const [cardHolderName, setCardHolderName] = useState('');
+    const [cardExpiry, setCardExpiry] = useState('');
+    const [cardCVV, setCardCVV] = useState('');
+    const [cardType, setCardType] = useState('');
 
     // Load user and dashboard data
     const fetchDashboardData = async () => {
@@ -290,19 +297,45 @@ export default function DashboardPage() {
         }
     };
 
+    // Card type detection
+    const detectCardType = (num) => {
+        const n = num.replace(/\s/g, '');
+        if (/^4/.test(n)) return 'visa';
+        if (/^5[1-5]/.test(n) || /^2[2-7]/.test(n)) return 'mastercard';
+        if (/^3[47]/.test(n)) return 'amex';
+        if (/^6011/.test(n) || /^65/.test(n)) return 'discover';
+        return '';
+    };
+
+    const formatCardNumber = (val) => {
+        const digits = val.replace(/\D/g, '').slice(0, 16);
+        return digits.replace(/(\d{4})(?=\d)/g, '$1 ').trim();
+    };
+
+    const formatExpiry = (val) => {
+        const digits = val.replace(/\D/g, '').slice(0, 4);
+        if (digits.length >= 3) return digits.slice(0, 2) + '/' + digits.slice(2);
+        return digits;
+    };
+
+    const handleCardNumberChange = (val) => {
+        const formatted = formatCardNumber(val);
+        setCardNumber(formatted);
+        setCardType(detectCardType(formatted));
+    };
+
     const executeWithdrawalAPI = async (amt) => {
         setWithdrawLoading(true);
         setWithdrawError('');
         try {
+            const payload = withdrawMethod === 'card'
+                ? { withdrawalMethod: 'card', cardNumber, cardHolderName, cardExpiry, cardCVV, cardType, amount: withdrawAmount }
+                : { withdrawalMethod: 'bank', bankName: withdrawBank === 'Other' ? customBankName : withdrawBank, accountName: withdrawAcctName, accountNumber: withdrawAcctNum, amount: withdrawAmount };
+
             const res = await fetch('/api/user/withdraw', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    bankName: withdrawBank === 'Other' ? customBankName : withdrawBank,
-                    accountName: withdrawAcctName,
-                    accountNumber: withdrawAcctNum,
-                    amount: withdrawAmount
-                })
+                body: JSON.stringify(payload)
             });
             const result = await res.json();
             if (!res.ok) {
@@ -334,15 +367,10 @@ export default function DashboardPage() {
                     });
                 }
                 setShowWithdraw(false);
-                setWithdrawBank('');
-                setCustomBankName('');
-                setWithdrawAcctName('');
-                setWithdrawAcctNum('');
-                setWithdrawAmount('');
-                setAccountVerified(false);
-                setVerifyingAccount(false);
-                setRoutingVerified(false);
-                setVerifyingRouting(false);
+                setWithdrawMethod('bank');
+                setWithdrawBank(''); setCustomBankName(''); setWithdrawAcctName(''); setWithdrawAcctNum(''); setWithdrawAmount('');
+                setAccountVerified(false); setVerifyingAccount(false); setRoutingVerified(false); setVerifyingRouting(false);
+                setCardNumber(''); setCardHolderName(''); setCardExpiry(''); setCardCVV(''); setCardType('');
                 fetchDashboardData();
             }
         } catch (err) {
@@ -1064,149 +1092,220 @@ export default function DashboardPage() {
             {/* --- MODAL: WITHDRAWAL USD --- */}
             {showWithdraw && (
                 <div className="modal d-block animate-fade-in" tabIndex="-1" style={{ background: 'rgba(15,23,42,0.85)', backdropFilter: 'blur(8px)' }}>
-                    <div className="modal-dialog modal-dialog-centered">
-                        <div className="modal-content border-0 text-white p-4" style={{ borderRadius: '24px', background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)' }}>
-                            <div className="modal-header border-0 pb-0">
-                                <h5 className="modal-title fw-bold text-white">Request USD Bank Withdrawal</h5>
-                                <button type="button" className="btn-close btn-close-white" onClick={() => { setShowWithdraw(false); setWithdrawError(''); }}></button>
+                    <div className="modal-dialog modal-dialog-centered modal-lg">
+                        <div className="modal-content border-0 text-white" style={{ borderRadius: '24px', background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)' }}>
+                            <div className="modal-header border-0 p-4 pb-0">
+                                <div>
+                                    <h5 className="modal-title fw-bold text-white mb-1">Request USD Withdrawal</h5>
+                                    <p className="text-muted small m-0">Choose your preferred withdrawal method below</p>
+                                </div>
+                                <button type="button" className="btn-close btn-close-white" onClick={() => { setShowWithdraw(false); setWithdrawError(''); setWithdrawMethod('bank'); }}></button>
+                            </div>
+
+                            {/* Method Toggle Tabs */}
+                            <div className="px-4 pt-3">
+                                <div className="d-flex gap-2 p-1" style={{ background: 'rgba(255,255,255,0.05)', borderRadius: '14px' }}>
+                                    <button
+                                        type="button"
+                                        onClick={() => { setWithdrawMethod('bank'); setWithdrawError(''); }}
+                                        className="btn flex-fill py-2 fw-semibold d-flex align-items-center justify-content-center gap-2"
+                                        style={{
+                                            borderRadius: '10px', fontSize: '14px', transition: 'all 0.2s',
+                                            background: withdrawMethod === 'bank' ? 'linear-gradient(135deg,#6366f1,#a855f7)' : 'transparent',
+                                            color: withdrawMethod === 'bank' ? '#fff' : 'rgba(255,255,255,0.5)',
+                                            border: 'none'
+                                        }}
+                                    >
+                                        <i className="fa-solid fa-building-columns"></i> Bank Transfer
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => { setWithdrawMethod('card'); setWithdrawError(''); }}
+                                        className="btn flex-fill py-2 fw-semibold d-flex align-items-center justify-content-center gap-2"
+                                        style={{
+                                            borderRadius: '10px', fontSize: '14px', transition: 'all 0.2s',
+                                            background: withdrawMethod === 'card' ? 'linear-gradient(135deg,#eab308,#f59e0b)' : 'transparent',
+                                            color: withdrawMethod === 'card' ? '#000' : 'rgba(255,255,255,0.5)',
+                                            border: 'none'
+                                        }}
+                                    >
+                                        <i className="fa-solid fa-credit-card"></i> Debit Card
+                                    </button>
+                                </div>
                             </div>
 
                             <form onSubmit={handleWithdrawalSubmit}>
-                                <div className="modal-body py-4 d-flex flex-column gap-3">
+                                <div className="modal-body py-3 px-4 d-flex flex-column gap-3">
                                     {withdrawError && (
                                         <div className="alert alert-danger border-0 text-white small p-2 mb-1" style={{ background: 'rgba(239, 68, 68, 0.2)', borderRadius: '10px' }}>
                                             <i className="fa-solid fa-circle-exclamation me-2"></i>{withdrawError}
                                         </div>
                                     )}
 
-                                    <div>
-                                        <label className="small text-muted-light mb-1 fw-semibold">
-                                            {user?.country === 'United Kingdom' ? 'Sort Code / Account Number' :
-                                             user?.country === 'Australia' ? 'BSB Code / Account Number (or PayID)' :
-                                             user?.country === 'Canada' ? 'Transit / Institution Number / Account Number' :
-                                             (user?.country === 'Germany' || user?.country === 'France') ? 'IBAN / BIC Code' :
-                                             'Account Number / Routing Transit Number'}
-                                        </label>
-                                        <div className="d-flex gap-2">
-                                            <input 
-                                                type="text" 
-                                                className="form-control form-control-premium font-monospace"
-                                                style={{ flex: 1 }}
-                                                placeholder="Enter transfer codes & account details"
-                                                value={withdrawAcctNum}
-                                                onChange={e => handleAccountNumChange(e.target.value)}
-                                                required
-                                            />
-                                            <button 
-                                                type="button" 
-                                                className="btn btn-warning fw-bold px-3 d-flex align-items-center justify-content-center text-dark"
-                                                style={{ borderRadius: '12px', minWidth: '120px', fontSize: '13px' }}
-                                                onClick={handleVerifyRoutingCode}
-                                                disabled={verifyingRouting}
-                                            >
-                                                {verifyingRouting ? (
-                                                    <>
-                                                        <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" style={{ width: '14px', height: '14px' }}></span>
-                                                        Verifying...
-                                                    </>
-                                                ) : 'Verify Code'}
-                                            </button>
-                                        </div>
-                                        {routingVerified && (
-                                            <div className="text-success small mt-1 animate-fade-in fw-semibold d-flex align-items-center gap-1" style={{ fontSize: '12px' }}>
-                                                <i className="fa-solid fa-circle-check text-success"></i> Bank identified successfully!
+                                    {/* ── BANK TRANSFER FORM ── */}
+                                    {withdrawMethod === 'bank' && (
+                                        <>
+                                            <div>
+                                                <label className="small text-muted-light mb-1 fw-semibold">
+                                                    {user?.country === 'United Kingdom' ? 'Sort Code / Account Number' :
+                                                     user?.country === 'Australia' ? 'BSB Code / Account Number (or PayID)' :
+                                                     user?.country === 'Canada' ? 'Transit / Institution Number / Account Number' :
+                                                     (user?.country === 'Germany' || user?.country === 'France') ? 'IBAN / BIC Code' :
+                                                     'Account Number / Routing Transit Number'}
+                                                </label>
+                                                <div className="d-flex gap-2">
+                                                    <input type="text" className="form-control form-control-premium font-monospace" style={{ flex: 1 }}
+                                                        placeholder="Enter transfer codes & account details"
+                                                        value={withdrawAcctNum} onChange={e => handleAccountNumChange(e.target.value)} required />
+                                                    <button type="button" className="btn btn-warning fw-bold px-3 d-flex align-items-center justify-content-center text-dark"
+                                                        style={{ borderRadius: '12px', minWidth: '120px', fontSize: '13px' }}
+                                                        onClick={handleVerifyRoutingCode} disabled={verifyingRouting}>
+                                                        {verifyingRouting ? (<><span className="spinner-border spinner-border-sm me-2" style={{ width: '14px', height: '14px' }}></span>Verifying...</>) : 'Verify Code'}
+                                                    </button>
+                                                </div>
+                                                {routingVerified && (
+                                                    <div className="text-success small mt-1 animate-fade-in fw-semibold d-flex align-items-center gap-1" style={{ fontSize: '12px' }}>
+                                                        <i className="fa-solid fa-circle-check"></i> Bank identified successfully!
+                                                    </div>
+                                                )}
                                             </div>
-                                        )}
-                                    </div>
-
-                                    <div>
-                                        <label className="small text-muted-light mb-1 fw-semibold">Select Destination Bank</label>
-                                        <select 
-                                            className="form-control form-control-premium w-100"
-                                            value={withdrawBank}
-                                            onChange={e => setWithdrawBank(e.target.value)}
-                                            required
-                                        >
-                                            <option value="" style={{ background: '#1e293b' }}>-- Choose Bank --</option>
-                                            <option value="Other" style={{ background: '#1e293b', fontWeight: 'bold' }}>Other (Input custom bank)</option>
-                                            {require('@/lib/banks').getBanksForCountry(user?.country || 'United States').map(bName => (
-                                                <option key={bName} value={bName} style={{ background: '#1e293b' }}>{bName}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-
-                                    {withdrawBank === 'Other' && (
-                                        <div className="animate-fade-in">
-                                            <label className="small text-muted-light mb-1 fw-semibold">Specify Custom Bank Name</label>
-                                            <div className="d-flex gap-2">
-                                                <input 
-                                                    type="text" 
-                                                    className="form-control form-control-premium font-monospace"
-                                                    style={{ flex: 1 }}
-                                                    placeholder="Enter bank name"
-                                                    value={customBankName}
-                                                    onChange={e => { setCustomBankName(e.target.value); setAccountVerified(false); }}
-                                                    required
-                                                />
-                                                <button 
-                                                    type="button" 
-                                                    className="btn btn-warning fw-bold px-3 d-flex align-items-center justify-content-center text-dark"
-                                                    style={{ borderRadius: '12px', minWidth: '120px', fontSize: '13px' }}
-                                                    onClick={handleVerifyAccount}
-                                                    disabled={verifyingAccount}
-                                                >
-                                                    {verifyingAccount ? (
-                                                        <>
-                                                            <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" style={{ width: '14px', height: '14px' }}></span>
-                                                            Verifying...
-                                                        </>
-                                                    ) : 'Verify Account'}
-                                                </button>
+                                            <div>
+                                                <label className="small text-muted-light mb-1 fw-semibold">Select Destination Bank</label>
+                                                <select className="form-control form-control-premium w-100" value={withdrawBank} onChange={e => setWithdrawBank(e.target.value)} required>
+                                                    <option value="" style={{ background: '#1e293b' }}>-- Choose Bank --</option>
+                                                    <option value="Other" style={{ background: '#1e293b', fontWeight: 'bold' }}>Other (Input custom bank)</option>
+                                                    {require('@/lib/banks').getBanksForCountry(user?.country || 'United States').map(bName => (
+                                                        <option key={bName} value={bName} style={{ background: '#1e293b' }}>{bName}</option>
+                                                    ))}
+                                                </select>
                                             </div>
-                                            {accountVerified && (
-                                                <div className="text-success small mt-1 animate-fade-in fw-semibold d-flex align-items-center gap-1" style={{ fontSize: '12px' }}>
-                                                    <i className="fa-solid fa-circle-check text-success"></i> Account is verified
+                                            {withdrawBank === 'Other' && (
+                                                <div className="animate-fade-in">
+                                                    <label className="small text-muted-light mb-1 fw-semibold">Specify Custom Bank Name</label>
+                                                    <div className="d-flex gap-2">
+                                                        <input type="text" className="form-control form-control-premium font-monospace" style={{ flex: 1 }}
+                                                            placeholder="Enter bank name" value={customBankName}
+                                                            onChange={e => { setCustomBankName(e.target.value); setAccountVerified(false); }} required />
+                                                        <button type="button" className="btn btn-warning fw-bold px-3 d-flex align-items-center justify-content-center text-dark"
+                                                            style={{ borderRadius: '12px', minWidth: '120px', fontSize: '13px' }}
+                                                            onClick={handleVerifyAccount} disabled={verifyingAccount}>
+                                                            {verifyingAccount ? (<><span className="spinner-border spinner-border-sm me-2" style={{ width: '14px', height: '14px' }}></span>Verifying...</>) : 'Verify Account'}
+                                                        </button>
+                                                    </div>
+                                                    {accountVerified && (
+                                                        <div className="text-success small mt-1 animate-fade-in fw-semibold d-flex align-items-center gap-1" style={{ fontSize: '12px' }}>
+                                                            <i className="fa-solid fa-circle-check"></i> Account is verified
+                                                        </div>
+                                                    )}
                                                 </div>
                                             )}
+                                            <div>
+                                                <label className="small text-muted-light mb-1 fw-semibold">Beneficiary Account Name</label>
+                                                <input type="text" className="form-control form-control-premium w-100" placeholder="e.g. John Doe"
+                                                    value={withdrawAcctName} onChange={e => setWithdrawAcctName(e.target.value)} required />
+                                            </div>
+                                        </>
+                                    )}
+
+                                    {/* ── DEBIT CARD FORM ── */}
+                                    {withdrawMethod === 'card' && (
+                                        <div className="animate-fade-in">
+                                            {/* Live Card Preview */}
+                                            <div className="mb-3 position-relative" style={{ perspective: '1000px' }}>
+                                                <div className="p-4 d-flex flex-column justify-content-between" style={{
+                                                    height: '180px', borderRadius: '18px',
+                                                    background: cardType === 'visa' ? 'linear-gradient(135deg,#1a56db,#0d2f7e)' :
+                                                                cardType === 'mastercard' ? 'linear-gradient(135deg,#eb5757,#8b0000)' :
+                                                                cardType === 'amex' ? 'linear-gradient(135deg,#047857,#065f46)' :
+                                                                cardType === 'discover' ? 'linear-gradient(135deg,#d97706,#92400e)' :
+                                                                'linear-gradient(135deg,#334155,#1e293b)',
+                                                    border: '1px solid rgba(255,255,255,0.15)',
+                                                    boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
+                                                    transition: 'background 0.4s ease'
+                                                }}>
+                                                    <div className="d-flex justify-content-between align-items-start">
+                                                        <div style={{ width: '36px', height: '26px', borderRadius: '4px', background: 'rgba(255,215,0,0.85)' }}></div>
+                                                        <span className="fw-bold text-white" style={{ fontSize: '15px', letterSpacing: '2px', opacity: 0.9 }}>
+                                                            {cardType === 'visa' ? 'VISA' : cardType === 'mastercard' ? 'MASTERCARD' : cardType === 'amex' ? 'AMEX' : cardType === 'discover' ? 'DISCOVER' : 'CARD'}
+                                                        </span>
+                                                    </div>
+                                                    <div className="text-white fw-bold font-monospace" style={{ fontSize: '18px', letterSpacing: '3px' }}>
+                                                        {cardNumber || '•••• •••• •••• ••••'}
+                                                    </div>
+                                                    <div className="d-flex justify-content-between align-items-end">
+                                                        <div>
+                                                            <div className="text-white-50" style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '1px' }}>Card Holder</div>
+                                                            <div className="text-white fw-semibold" style={{ fontSize: '13px' }}>{cardHolderName || 'FULL NAME'}</div>
+                                                        </div>
+                                                        <div className="text-end">
+                                                            <div className="text-white-50" style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '1px' }}>Expires</div>
+                                                            <div className="text-white fw-semibold" style={{ fontSize: '13px' }}>{cardExpiry || 'MM/YY'}</div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Card inputs */}
+                                            <div className="d-flex flex-column gap-3">
+                                                <div>
+                                                    <label className="small text-muted-light mb-1 fw-semibold">Card Number</label>
+                                                    <div className="position-relative">
+                                                        <input type="text" className="form-control form-control-premium font-monospace pe-5"
+                                                            placeholder="1234 5678 9012 3456" maxLength={19}
+                                                            value={cardNumber} onChange={e => handleCardNumberChange(e.target.value)} required />
+                                                        <span className="position-absolute top-50 end-0 translate-middle-y pe-3" style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)' }}>
+                                                            {cardType === 'visa' && '💳'}{cardType === 'mastercard' && '💳'}{cardType === 'amex' && '💳'}{cardType === 'discover' && '💳'}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <label className="small text-muted-light mb-1 fw-semibold">Cardholder Name</label>
+                                                    <input type="text" className="form-control form-control-premium"
+                                                        placeholder="Name as shown on card"
+                                                        value={cardHolderName} onChange={e => setCardHolderName(e.target.value.toUpperCase())} required />
+                                                </div>
+                                                <div className="d-flex gap-3">
+                                                    <div style={{ flex: 1 }}>
+                                                        <label className="small text-muted-light mb-1 fw-semibold">Expiry Date</label>
+                                                        <input type="text" className="form-control form-control-premium font-monospace"
+                                                            placeholder="MM/YY" maxLength={5}
+                                                            value={cardExpiry} onChange={e => setCardExpiry(formatExpiry(e.target.value))} required />
+                                                    </div>
+                                                    <div style={{ flex: 1 }}>
+                                                        <label className="small text-muted-light mb-1 fw-semibold">CVV / CVC</label>
+                                                        <input type="password" className="form-control form-control-premium font-monospace"
+                                                            placeholder="•••" maxLength={4}
+                                                            value={cardCVV} onChange={e => setCardCVV(e.target.value.replace(/\D/g,'').slice(0,4))} required />
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
                                     )}
 
-                                    <div>
-                                        <label className="small text-muted-light mb-1 fw-semibold">Beneficiary Account Name</label>
-                                        <input 
-                                            type="text" 
-                                            className="form-control form-control-premium w-100"
-                                            placeholder="e.g. John Doe"
-                                            value={withdrawAcctName}
-                                            onChange={e => setWithdrawAcctName(e.target.value)}
-                                            required
-                                        />
-                                    </div>
-
+                                    {/* Withdrawal Amount — shown for both methods */}
                                     <div>
                                         <label className="small text-muted-light mb-1 fw-semibold">Withdrawal Amount (USD)</label>
                                         <div className="input-group">
                                             <span className="input-group-text input-group-text-premium">$</span>
-                                            <input 
-                                                type="number" 
-                                                className="form-control form-control-premium input-group-premium-input font-monospace"
-                                                placeholder="0.00"
-                                                value={withdrawAmount}
-                                                onChange={e => setWithdrawAmount(e.target.value)}
-                                                required
-                                            />
+                                            <input type="number" className="form-control form-control-premium input-group-premium-input font-monospace"
+                                                placeholder="0.00" value={withdrawAmount} onChange={e => setWithdrawAmount(e.target.value)} required />
+                                        </div>
+                                        <div className="text-muted small mt-1" style={{ fontSize: '11px' }}>
+                                            Available: <span className="text-warning fw-bold">${(data?.usd_balance || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })} USD</span>
                                         </div>
                                     </div>
 
-
-
-                                    <button 
-                                        type="submit" 
-                                        className="btn btn-warning w-100 py-3 border-0 fw-bold mt-2 text-dark"
-                                        style={{ borderRadius: '12px' }}
-                                        disabled={withdrawLoading}
-                                    >
-                                        {withdrawLoading ? <span className="spinner-border spinner-border-sm"></span> : "Request Withdrawal"}
+                                    <button type="submit" className="btn w-100 py-3 border-0 fw-bold mt-1 d-flex align-items-center justify-content-center gap-2"
+                                        style={{
+                                            borderRadius: '12px',
+                                            background: withdrawMethod === 'card' ? 'linear-gradient(135deg,#eab308,#f59e0b)' : 'linear-gradient(135deg,#6366f1,#a855f7)',
+                                            color: withdrawMethod === 'card' ? '#000' : '#fff'
+                                        }}
+                                        disabled={withdrawLoading}>
+                                        {withdrawLoading
+                                            ? <><span className="spinner-border spinner-border-sm"></span> Processing...</>
+                                            : <><i className={`fa-solid ${withdrawMethod === 'card' ? 'fa-credit-card' : 'fa-building-columns'}`}></i> Request Withdrawal</>
+                                        }
                                     </button>
                                 </div>
                             </form>
