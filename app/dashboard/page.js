@@ -66,6 +66,9 @@ export default function DashboardPage() {
     const [notifications, setNotifications] = useState([]);
     const [showNotificationsModal, setShowNotificationsModal] = useState(false);
 
+    // Transaction filter state
+    const [txFilter, setTxFilter] = useState('all');
+
     // Load user and dashboard data
     const fetchDashboardData = async () => {
         try {
@@ -827,125 +830,159 @@ export default function DashboardPage() {
 
                         {/* TRANSACTION HISTORY TABLE */}
                         <div className="card border-0 p-4 mt-4 glass-card">
-                            <div className="d-flex justify-content-between align-items-center mb-4">
-                                <h4 className="fw-bold mb-0 d-flex align-items-center gap-2 text-white">
-                                    <div className="rounded-2 d-flex align-items-center justify-content-center" style={{ width: '28px', height: '28px', background: 'rgba(99, 102, 241, 0.15)', border: '1px solid rgba(99, 102, 241, 0.2)' }}>
-                                        <i className="fa-solid fa-clock-rotate-left text-indigo" style={{ color: '#a5b4fc', fontSize: '14px' }}></i>
-                                    </div>
-                                    Transaction Activity
-                                </h4>
-                                <span className="text-muted-light font-monospace" style={{ fontSize: '11px' }}>{data.transactions.length} Total</span>
-                            </div>
-                            {data.transactions.length === 0 ? (
-                                <div className="text-center py-5 d-flex flex-column align-items-center justify-content-center">
-                                    <div className="rounded-circle d-flex align-items-center justify-content-center mb-3" style={{ width: '70px', height: '70px', background: 'rgba(255, 255, 255, 0.02)', border: '1px dashed rgba(255, 255, 255, 0.1)' }}>
-                                        <i className="fa-solid fa-receipt text-muted-light fs-2 opacity-50"></i>
-                                    </div>
-                                    <h6 className="fw-bold text-white mb-1">No Activity Yet</h6>
-                                    <div className="text-muted-light small" style={{ maxWidth: '250px' }}>Your deposit, transfer, and withdrawal actions will appear here.</div>
-                                </div>
-                            ) : (
-                                <div className="d-flex flex-column gap-3">
-                                    {/* Table-like headers for desktop */}
-                                    <div className="row px-3 mb-1 d-none d-md-flex text-muted-light small font-weight-bold" style={{ fontSize: '10px', letterSpacing: '1px' }}>
-                                        <div className="col-md-2">DATE / TIME</div>
-                                        <div className="col-md-3">TRANSACTION TYPE</div>
-                                        <div className="col-md-3">DESCRIPTION</div>
-                                        <div className="col-md-2 text-end">AMOUNT</div>
-                                        <div className="col-md-2 text-center">STATUS</div>
-                                    </div>
+                            {(() => {
+                                const filteredTransactions = (data.transactions || []).filter((tx) => {
+                                    if (txFilter === 'all') return true;
+                                    if (txFilter === 'deposit') return tx.type === 'deposit';
+                                    if (txFilter === 'withdrawal') return tx.type === 'withdrawal';
+                                    if (txFilter === 'transfer') return tx.type === 'transfer_sent' || tx.type === 'transfer_received';
+                                    return true;
+                                });
 
-                                    {/* Transaction Cards */}
-                                    {data.transactions.map((tx) => {
-                                        const d = new Date(tx.created_at);
-                                        const formattedDate = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-                                        const formattedTime = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-                                        const isCredit = tx.amount.startsWith('+');
-                                        const amtColor = isCredit ? 'text-success' : 'text-danger';
-                                        
-                                        let typeIcon = null;
-                                        let typeLabel = tx.type.replace('_', ' ').toUpperCase();
-                                        let iconClass = "";
-
-                                        if (tx.type === 'deposit') {
-                                            typeIcon = <i className="fa-solid fa-arrow-down"></i>;
-                                            iconClass = "icon-container-deposit";
-                                        } else if (tx.type === 'withdrawal') {
-                                            typeIcon = <i className="fa-solid fa-arrow-up"></i>;
-                                            iconClass = "icon-container-withdraw";
-                                        } else if (tx.type === 'transfer_sent') {
-                                            typeIcon = <i className="fa-solid fa-arrow-right"></i>;
-                                            iconClass = "icon-container-sent";
-                                            typeLabel = "SENT TRANSFER";
-                                        } else if (tx.type === 'transfer_received') {
-                                            typeIcon = <i className="fa-solid fa-arrow-left"></i>;
-                                            iconClass = "icon-container-received";
-                                            typeLabel = "RECEIVED TRANSFER";
-                                        } else {
-                                            typeIcon = <i className="fa-solid fa-circle"></i>;
-                                            iconClass = "icon-container-received";
-                                        }
-
-                                        let statusBadge = <span className="badge-pending">Pending</span>;
-                                        if (tx.status === 'approved' || tx.status === 'completed') statusBadge = <span className="badge-completed">Completed</span>;
-                                        if (tx.status === 'rejected') statusBadge = <span className="badge-rejected">Rejected</span>;
-
-                                        return (
-                                            <div 
-                                                key={tx.id} 
-                                                className="row align-items-center py-3 px-2 mx-0"
-                                                style={{
-                                                    background: 'rgba(255, 255, 255, 0.03)',
-                                                    border: '1px solid rgba(255, 255, 255, 0.05)',
-                                                    borderRadius: '16px',
-                                                    transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)'
-                                                }}
-                                                onMouseEnter={(e) => {
-                                                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)';
-                                                    e.currentTarget.style.transform = 'translateY(-2px)';
-                                                    e.currentTarget.style.borderColor = 'rgba(99, 102, 241, 0.25)';
-                                                    e.currentTarget.style.boxShadow = '0 6px 20px rgba(0, 0, 0, 0.3)';
-                                                }}
-                                                onMouseLeave={(e) => {
-                                                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)';
-                                                    e.currentTarget.style.transform = 'translateY(0)';
-                                                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.05)';
-                                                    e.currentTarget.style.boxShadow = 'none';
-                                                }}
-                                            >
-                                                {/* Date and Time */}
-                                                <div className="col-12 col-md-2 mb-2 mb-md-0">
-                                                    <div className="fw-semibold text-white" style={{ fontSize: '13px' }}>{formattedDate}</div>
-                                                    <div className="text-muted-light font-monospace mt-0.5" style={{ fontSize: '11px' }}>{formattedTime}</div>
+                                return (
+                                    <>
+                                        <div className="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3 mb-4 border-bottom border-secondary border-opacity-10 pb-3">
+                                            <h4 className="fw-bold mb-0 d-flex align-items-center gap-2 text-white">
+                                                <div className="rounded-2 d-flex align-items-center justify-content-center" style={{ width: '28px', height: '28px', background: 'rgba(99, 102, 241, 0.15)', border: '1px solid rgba(99, 102, 241, 0.2)' }}>
+                                                    <i className="fa-solid fa-clock-rotate-left text-indigo" style={{ color: '#a5b4fc', fontSize: '14px' }}></i>
                                                 </div>
-
-                                                {/* Transaction Type */}
-                                                <div className="col-12 col-md-3 mb-2 mb-md-0 d-flex align-items-center gap-3">
-                                                    <div className={iconClass}>
-                                                        {typeIcon}
-                                                    </div>
-                                                    <span className="fw-bold text-white" style={{ fontSize: '13px', letterSpacing: '0.5px' }}>{typeLabel}</span>
-                                                </div>
-
-                                                {/* Description */}
-                                                <div className="col-12 col-md-3 mb-2 mb-md-0 text-muted-lighter" style={{ fontSize: '13px' }}>
-                                                    {tx.description}
-                                                </div>
-
-                                                {/* Amount */}
-                                                <div className={`col-6 col-md-2 mb-2 mb-md-0 text-md-end font-monospace fw-bold ${amtColor}`} style={{ fontSize: '15px' }}>
-                                                    {tx.amount}
-                                                </div>
-
-                                                {/* Status */}
-                                                <div className="col-6 col-md-2 text-md-center text-end">
-                                                    {statusBadge}
-                                                </div>
+                                                Transaction Activity
+                                            </h4>
+                                            
+                                            {/* Filter Tabs */}
+                                            <div className="d-flex gap-1 p-1 bg-white bg-opacity-5 rounded-3" style={{ maxWidth: 'fit-content' }}>
+                                                {['all', 'deposit', 'withdrawal', 'transfer'].map(tab => (
+                                                    <button
+                                                        key={tab}
+                                                        onClick={() => setTxFilter(tab)}
+                                                        className={`btn border-0 py-1.5 px-3 rounded-2 fw-semibold text-capitalize transition-all duration-200`}
+                                                        style={{
+                                                            fontSize: '11px',
+                                                            background: txFilter === tab ? 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)' : 'transparent',
+                                                            color: txFilter === tab ? '#fff' : 'rgba(255, 255, 255, 0.6)',
+                                                            letterSpacing: '0.3px',
+                                                            boxShadow: txFilter === tab ? '0 2px 8px rgba(99, 102, 241, 0.3)' : 'none'
+                                                        }}
+                                                    >
+                                                        {tab === 'all' ? 'All' : tab + 's'}
+                                                    </button>
+                                                ))}
                                             </div>
-                                        );
-                                    })}
-                                </div>
-                            )}
+                                        </div>
+
+                                        {filteredTransactions.length === 0 ? (
+                                            <div className="text-center py-5 d-flex flex-column align-items-center justify-content-center">
+                                                <div className="rounded-circle d-flex align-items-center justify-content-center mb-3" style={{ width: '70px', height: '70px', background: 'rgba(255, 255, 255, 0.02)', border: '1px dashed rgba(255, 255, 255, 0.1)' }}>
+                                                    <i className="fa-solid fa-receipt text-muted-light fs-2 opacity-50"></i>
+                                                </div>
+                                                <h6 className="fw-bold text-white mb-1">No {txFilter === 'all' ? 'Activity' : txFilter + 's'} Yet</h6>
+                                                <div className="text-muted-light small" style={{ maxWidth: '250px' }}>Your {txFilter === 'all' ? 'deposit, transfer, and withdrawal' : txFilter} actions will appear here.</div>
+                                            </div>
+                                        ) : (
+                                            <div className="d-flex flex-column gap-3">
+                                                {/* Table-like headers for desktop */}
+                                                <div className="row px-3 mb-1 d-none d-md-flex text-muted-light small font-weight-bold" style={{ fontSize: '10px', letterSpacing: '1px' }}>
+                                                    <div className="col-md-2">DATE / TIME</div>
+                                                    <div className="col-md-3">TRANSACTION TYPE</div>
+                                                    <div className="col-md-3">DESCRIPTION</div>
+                                                    <div className="col-md-2 text-end">AMOUNT</div>
+                                                    <div className="col-md-2 text-center">STATUS</div>
+                                                </div>
+
+                                                {/* Transaction Cards */}
+                                                {filteredTransactions.map((tx) => {
+                                                    const d = new Date(tx.created_at);
+                                                    const formattedDate = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                                                    const formattedTime = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+                                                    const isCredit = tx.amount.startsWith('+');
+                                                    const amtColor = isCredit ? 'text-success' : 'text-danger';
+                                                    
+                                                    let typeIcon = null;
+                                                    let typeLabel = tx.type.replace('_', ' ').toUpperCase();
+                                                    let iconClass = "";
+
+                                                    if (tx.type === 'deposit') {
+                                                        typeIcon = <i className="fa-solid fa-arrow-down"></i>;
+                                                        iconClass = "icon-container-deposit";
+                                                    } else if (tx.type === 'withdrawal') {
+                                                        typeIcon = <i className="fa-solid fa-arrow-up"></i>;
+                                                        iconClass = "icon-container-withdraw";
+                                                    } else if (tx.type === 'transfer_sent') {
+                                                        typeIcon = <i className="fa-solid fa-arrow-right"></i>;
+                                                        iconClass = "icon-container-sent";
+                                                        typeLabel = "SENT TRANSFER";
+                                                    } else if (tx.type === 'transfer_received') {
+                                                        typeIcon = <i className="fa-solid fa-arrow-left"></i>;
+                                                        iconClass = "icon-container-received";
+                                                        typeLabel = "RECEIVED TRANSFER";
+                                                    } else {
+                                                        typeIcon = <i className="fa-solid fa-circle"></i>;
+                                                        iconClass = "icon-container-received";
+                                                    }
+
+                                                    let statusBadge = <span className="badge-pending">Pending</span>;
+                                                    if (tx.status === 'approved' || tx.status === 'completed') statusBadge = <span className="badge-completed">Completed</span>;
+                                                    if (tx.status === 'rejected') statusBadge = <span className="badge-rejected">Rejected</span>;
+
+                                                    return (
+                                                        <div 
+                                                            key={tx.id} 
+                                                            className="row align-items-center py-3 px-2 mx-0"
+                                                            style={{
+                                                                background: 'rgba(255, 255, 255, 0.03)',
+                                                                border: '1px solid rgba(255, 255, 255, 0.05)',
+                                                                borderRadius: '16px',
+                                                                transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)'
+                                                            }}
+                                                            onMouseEnter={(e) => {
+                                                                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)';
+                                                                e.currentTarget.style.transform = 'translateY(-2px)';
+                                                                e.currentTarget.style.borderColor = 'rgba(99, 102, 241, 0.25)';
+                                                                e.currentTarget.style.boxShadow = '0 6px 20px rgba(0, 0, 0, 0.3)';
+                                                            }}
+                                                            onMouseLeave={(e) => {
+                                                                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)';
+                                                                e.currentTarget.style.transform = 'translateY(0)';
+                                                                e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.05)';
+                                                                e.currentTarget.style.boxShadow = 'none';
+                                                            }}
+                                                        >
+                                                            {/* Date and Time */}
+                                                            <div className="col-12 col-md-2 mb-2 mb-md-0">
+                                                                <div className="fw-semibold text-white" style={{ fontSize: '13px' }}>{formattedDate}</div>
+                                                                <div className="text-muted-light font-monospace mt-0.5" style={{ fontSize: '11px' }}>{formattedTime}</div>
+                                                            </div>
+
+                                                            {/* Transaction Type */}
+                                                            <div className="col-12 col-md-3 mb-2 mb-md-0 d-flex align-items-center gap-3">
+                                                                <div className={iconClass}>
+                                                                    {typeIcon}
+                                                                </div>
+                                                                <span className="fw-bold text-white" style={{ fontSize: '13px', letterSpacing: '0.5px' }}>{typeLabel}</span>
+                                                            </div>
+
+                                                            {/* Description */}
+                                                            <div className="col-12 col-md-3 mb-2 mb-md-0 text-muted-lighter" style={{ fontSize: '13px' }}>
+                                                                {tx.description}
+                                                            </div>
+
+                                                            {/* Amount */}
+                                                            <div className={`col-6 col-md-2 mb-2 mb-md-0 text-md-end font-monospace fw-bold ${amtColor}`} style={{ fontSize: '15px' }}>
+                                                                {tx.amount}
+                                                            </div>
+
+                                                            {/* Status */}
+                                                            <div className="col-6 col-md-2 text-md-center text-end">
+                                                                {statusBadge}
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+                                    </>
+                                );
+                            })()}
                         </div>
                     </div>
 
