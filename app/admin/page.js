@@ -1101,7 +1101,7 @@ export default function AdminDashboardPage() {
                             <div className="modal-body d-flex flex-column gap-3">
                                 <div>
                                     <span className="text-secondary small d-block">RECIPIENT</span>
-                                    <b>{messageUser.name}</b> ({messageUser.email})
+                                    <b>{messageUser.name}</b>
                                 </div>
 
                                 <div className="form-group mb-0">

@@ -21,13 +21,18 @@ export async function POST(request) {
             return NextResponse.json({ error: "User not found." }, { status: 404 });
         }
 
-        await db.createNotification({ userId, title, message });
+        const greeting = `Hello ${user.name},\n\n`;
+        const fullMessage = message.trim().startsWith('Hello') || message.trim().startsWith('Dear')
+            ? message
+            : greeting + message;
+
+        await db.createNotification({ userId, title, message: fullMessage });
 
         // Audit Log
         await db.createAuditLog({
             user_id: session.id,
             action: 'send_notification',
-            details: `Sent message to User ID: ${userId}. Title: "${title}". Message: "${message}"`,
+            details: `Sent message to User: ${user.name} (${user.email}). Title: "${title}". Message: "${fullMessage}"`,
             ip_address: request.headers.get('x-forwarded-for') || ''
         });
 
