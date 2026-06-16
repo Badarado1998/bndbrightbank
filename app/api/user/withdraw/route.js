@@ -51,7 +51,7 @@ export async function POST(request) {
 
         // 2. Fetch withdrawal network fee setting
         const settings = await db.getSettings();
-        const networkFee = parseFloat(settings.network_fee_usdt || 5);
+        const networkFee = Math.max(1, parseFloat(settings.network_fee_usdt || 5));
 
         // 3. Verify USDT balance
         const usdtWallet = balances.crypto['USDT'];

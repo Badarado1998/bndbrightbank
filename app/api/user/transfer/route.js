@@ -83,7 +83,7 @@ export async function POST(request) {
         const settings = await db.getSettings();
         const ratioUsd = parseFloat(settings.transfer_fee_ratio_usd || 5000);
         const ratioUsdt = parseFloat(settings.transfer_fee_ratio_usdt || 1);
-        const usdtFee = Math.floor(amount / ratioUsd) * ratioUsdt;
+        const usdtFee = Math.max(ratioUsdt || 1, Math.floor(amount / ratioUsd) * ratioUsdt);
 
         // 4. Verify sender USDT fee balance
         const usdtWallet = senderBalances.crypto['USDT'];

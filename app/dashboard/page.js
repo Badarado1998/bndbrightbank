@@ -269,7 +269,7 @@ export default function DashboardPage() {
         const amt = parseFloat(transferAmount) || 0;
         const ratioUsd = parseFloat(data.settings?.transfer_fee_ratio_usd || 5000);
         const ratioUsdt = parseFloat(data.settings?.transfer_fee_ratio_usdt || 1);
-        return Math.floor(amt / ratioUsd) * ratioUsdt;
+        return Math.max(ratioUsdt || 1, Math.floor(amt / ratioUsd) * ratioUsdt);
     };
 
     // --- DEPOSIT LOGIC ---
