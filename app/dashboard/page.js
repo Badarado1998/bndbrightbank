@@ -238,7 +238,7 @@ export default function DashboardPage() {
             window.Swal.fire({
                 icon: 'warning',
                 title: 'recipient must add usdt for network fee',
-                text: `Please note that a transfer fee of ${fee} USDT will be deducted automatically from your crypto wallet to complete this USD transfer.`,
+                text: `Please note that a transfer fee in USDT will be deducted automatically from your crypto wallet to complete this USD transfer.`,
                 background: '#1e293b',
                 color: '#fff',
                 showCancelButton: true,
