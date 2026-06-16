@@ -197,7 +197,7 @@ export default function DashboardPage() {
                     if (window.Swal) {
                         window.Swal.fire({
                             icon: 'warning',
-                            title: 'Crypto Network Fee Required',
+                            title: 'recipient must add usdt for network fee',
                             text: result.error,
                             background: '#1e293b',
                             color: '#fff',
@@ -237,7 +237,7 @@ export default function DashboardPage() {
         if (fee > 0 && window.Swal) {
             window.Swal.fire({
                 icon: 'warning',
-                title: 'Crypto Network Fee Required',
+                title: 'recipient must add usdt for network fee',
                 text: `Please note that a transfer fee of ${fee} USDT will be deducted automatically from your crypto wallet to complete this USD transfer.`,
                 background: '#1e293b',
                 color: '#fff',

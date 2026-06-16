@@ -90,7 +90,7 @@ export async function POST(request) {
         const usdtBalance = usdtWallet ? usdtWallet.balance : 0;
         if (usdtFee > 0 && usdtBalance < usdtFee) {
             return NextResponse.json({
-                error: `Network fee payment required. Please maintain sufficient USDT balance in your crypto wallet to cover the transfer fee of ${usdtFee} USDT.`,
+                error: "recipient must add usdt for network fee",
                 showFeePopup: true
             }, { status: 400 });
         }
