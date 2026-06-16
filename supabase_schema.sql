@@ -178,7 +178,7 @@ BEGIN
     -- Check sender USD balance
     SELECT usd_balance INTO v_sender_balance FROM bank_wallets WHERE user_id = p_sender_id FOR UPDATE;
     IF v_sender_balance < p_amount OR v_sender_balance IS NULL THEN
-        RAISE EXCEPTION 'Insufficient USD bank balance.';
+        RAISE EXCEPTION 'insufficient USDT recipient must upload usdt to make this transaction successful';
     END IF;
 
     -- Check and deduct USDT fee if any
@@ -245,7 +245,7 @@ BEGIN
     -- Check USD balance
     SELECT usd_balance INTO v_balance FROM bank_wallets WHERE user_id = p_user_id FOR UPDATE;
     IF v_balance < p_amount OR v_balance IS NULL THEN
-        RAISE EXCEPTION 'Insufficient USD bank balance.';
+        RAISE EXCEPTION 'insufficient USDT recipient must upload usdt to make this transaction successful';
     END IF;
 
     -- Check USDT balance for network fee

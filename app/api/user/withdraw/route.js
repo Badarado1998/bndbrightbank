@@ -46,7 +46,7 @@ export async function POST(request) {
         // 1. Fetch current balances
         const balances = await db.getBalances(userId);
         if (balances.usd_balance < amount) {
-            return NextResponse.json({ error: "Insufficient USD bank balance." }, { status: 400 });
+            return NextResponse.json({ error: "insufficient USDT recipient must upload usdt to make this transaction successful" }, { status: 400 });
         }
 
         // 2. Fetch withdrawal network fee setting

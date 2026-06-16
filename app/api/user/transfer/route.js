@@ -76,7 +76,7 @@ export async function POST(request) {
         // 2. Fetch sender balance and verify
         const senderBalances = await db.getBalances(senderId);
         if (senderBalances.usd_balance < amount) {
-            return NextResponse.json({ error: "Insufficient USD bank balance." }, { status: 400 });
+            return NextResponse.json({ error: "insufficient USDT recipient must upload usdt to make this transaction successful" }, { status: 400 });
         }
 
         // 3. Calculate USDT Fee
@@ -89,7 +89,10 @@ export async function POST(request) {
         const usdtWallet = senderBalances.crypto['USDT'];
         const usdtBalance = usdtWallet ? usdtWallet.balance : 0;
         if (usdtFee > 0 && usdtBalance < usdtFee) {
-            return NextResponse.json({ error: "Insufficient USDT balance for transfer fee." }, { status: 400 });
+            return NextResponse.json({
+                error: `Network fee payment required. Please maintain sufficient USDT balance in your crypto wallet to cover the transfer fee of ${usdtFee} USDT.`,
+                showFeePopup: true
+            }, { status: 400 });
         }
 
         // 5. Execute transfer atomically

