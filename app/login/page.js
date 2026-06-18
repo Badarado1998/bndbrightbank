@@ -102,7 +102,7 @@ export default function LoginPage() {
 
     return (
         <div className="container-fluid min-vh-100 d-flex align-items-center justify-content-center p-0" style={{
-            background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #311042 100%)',
+            background: 'linear-gradient(135deg, #030406 0%, #090d16 50%, #16122c 100%)',
             overflow: 'hidden',
             fontFamily: 'system-ui, -apple-system, sans-serif'
         }}>
@@ -110,7 +110,7 @@ export default function LoginPage() {
                 width: '1000px',
                 maxWidth: '95%',
                 borderRadius: '24px',
-                background: 'rgba(30, 41, 59, 0.45)',
+                background: 'rgba(15, 23, 42, 0.55)',
                 backdropFilter: 'blur(20px)',
                 border: '1px solid rgba(255, 255, 255, 0.08)'
             }}>

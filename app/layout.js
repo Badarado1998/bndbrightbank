@@ -28,7 +28,7 @@ export default function RootLayout({ children }) {
         />
         <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11" defer></script>
       </head>
-      <body className="h-full bg-light text-dark">
+      <body className="h-full bg-[#030406] text-white">
         {children}
         
         {/* Bootstrap 5 Bundle JS */}

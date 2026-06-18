@@ -527,7 +527,7 @@ export default function DashboardPage() {
 
     if (loading) {
         return (
-            <div className="min-vh-100 d-flex flex-column align-items-center justify-content-center text-white" style={{ background: '#070a13' }}>
+            <div className="min-vh-100 d-flex flex-column align-items-center justify-content-center text-white" style={{ background: '#030406' }}>
                 <div className="spinner-border text-indigo mb-3" style={{ width: '3rem', height: '3rem', color: '#6366f1' }} role="status"></div>
                 <div className="fw-semibold text-light">Loading Secure Wallet Engine...</div>
             </div>
@@ -538,13 +538,13 @@ export default function DashboardPage() {
 
     return (
         <div className="min-vh-100 text-white pb-5" style={{
-            background: 'linear-gradient(135deg, #090d16 0%, #0f172a 50%, #1e1b4b 100%)',
+            background: 'linear-gradient(135deg, #030406 0%, #090d16 50%, #16122c 100%)',
             fontFamily: 'system-ui, -apple-system, sans-serif'
         }}>
             {/* Global Style Overrides for Perfect Legibility */}
             <style jsx global>{`
                 body {
-                    background-color: #090d16 !important;
+                    background-color: #030406 !important;
                     color: #f8fafc !important;
                 }
                 .text-muted-light {
@@ -554,7 +554,7 @@ export default function DashboardPage() {
                     color: #cbd5e1 !important; /* Even lighter slate */
                 }
                 .glass-card {
-                    background: rgba(30, 41, 59, 0.45) !important;
+                    background: rgba(15, 23, 42, 0.55) !important;
                     backdrop-filter: blur(16px) !important;
                     border: 1px solid rgba(255, 255, 255, 0.08) !important;
                     box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3) !important;
