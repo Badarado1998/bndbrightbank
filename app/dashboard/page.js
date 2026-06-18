@@ -69,6 +69,12 @@ export default function DashboardPage() {
     // Transaction filter state
     const [txFilter, setTxFilter] = useState('all');
 
+    // Transaction Details state
+    const [showTxDetails, setShowTxDetails] = useState(false);
+    const [selectedTxDetails, setSelectedTxDetails] = useState(null);
+    const [txDetailsLoading, setTxDetailsLoading] = useState(false);
+    const [txDetailsError, setTxDetailsError] = useState('');
+
     // Load user and dashboard data
     const fetchDashboardData = async () => {
         try {
@@ -104,6 +110,28 @@ export default function DashboardPage() {
     useEffect(() => {
         fetchDashboardData();
     }, [router]);
+
+    const handleTransactionClick = async (tx) => {
+        setShowTxDetails(true);
+        setTxDetailsLoading(true);
+        setTxDetailsError('');
+        setSelectedTxDetails(null);
+
+        try {
+            const res = await fetch(`/api/user/transaction-details?id=${tx.id}`);
+            if (!res.ok) {
+                const errData = await res.json();
+                throw new Error(errData.error || 'Failed to fetch transaction details.');
+            }
+            const payload = await res.json();
+            setSelectedTxDetails(payload);
+        } catch (err) {
+            console.error("Error loading transaction details:", err);
+            setTxDetailsError(err.message || 'An error occurred while loading transaction details.');
+        } finally {
+            setTxDetailsLoading(false);
+        }
+    };
 
     const handleLogout = async () => {
         await fetch('/api/auth/logout', { method: 'POST' });
@@ -967,7 +995,9 @@ export default function DashboardPage() {
                                                         <div 
                                                             key={tx.id} 
                                                             className="row align-items-center py-3 px-2 mx-0"
+                                                            onClick={() => handleTransactionClick(tx)}
                                                             style={{
+                                                                cursor: 'pointer',
                                                                 background: 'rgba(255, 255, 255, 0.03)',
                                                                 border: '1px solid rgba(255, 255, 255, 0.05)',
                                                                 borderRadius: '16px',
@@ -1729,6 +1759,328 @@ export default function DashboardPage() {
                                 <button type="button" className="btn btn-secondary px-4 py-2" style={{ borderRadius: '12px', background: 'rgba(255,255,255,0.08)', border: 'none' }} onClick={() => setShowNotificationsModal(false)}>
                                     Close
                                 </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* --- MODAL: TRANSACTION DETAILS --- */}
+            {showTxDetails && (
+                <div className="modal d-block animate-fade-in" tabIndex="-1" style={{ background: 'rgba(15,23,42,0.85)', backdropFilter: 'blur(8px)', zIndex: 1060 }}>
+                    <div className="modal-dialog modal-dialog-centered modal-md">
+                        <div className="modal-content border-0 text-white" style={{ borderRadius: '24px', background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)' }}>
+                            <div className="modal-header border-0 p-4 pb-0 d-flex justify-content-between align-items-center">
+                                <h5 className="modal-title fw-bold text-white mb-0">Transaction Details</h5>
+                                <button 
+                                    type="button" 
+                                    onClick={() => setShowTxDetails(false)} 
+                                    className="btn-close btn-close-white" 
+                                    aria-label="Close"
+                                    style={{ boxShadow: 'none' }}
+                                ></button>
+                            </div>
+                            
+                            <div className="modal-body p-4">
+                                {txDetailsLoading ? (
+                                    <div className="text-center py-5">
+                                        <div className="spinner-border text-primary" role="status" style={{ width: '3rem', height: '3rem' }}>
+                                            <span className="visually-hidden">Loading...</span>
+                                        </div>
+                                        <p className="mt-3 text-white-50">Retrieving details...</p>
+                                    </div>
+                                ) : txDetailsError ? (
+                                    <div className="text-center py-4">
+                                        <i className="fa-solid fa-circle-exclamation text-danger mb-3" style={{ fontSize: '3rem' }}></i>
+                                        <h6 className="fw-bold mb-2">Failed to load details</h6>
+                                        <p className="text-white-50 small mb-3">{txDetailsError}</p>
+                                        <button 
+                                            onClick={() => setShowTxDetails(false)} 
+                                            className="btn btn-secondary px-4 py-2 border-0 fw-semibold" 
+                                            style={{ borderRadius: '12px' }}
+                                        >
+                                            Dismiss
+                                        </button>
+                                    </div>
+                                ) : selectedTxDetails ? (() => {
+                                    const { transaction, details } = selectedTxDetails;
+                                    const isCredit = transaction.amount.startsWith('+');
+                                    const amountVal = transaction.amount;
+                                    const status = transaction.status;
+                                    const type = transaction.type;
+                                    
+                                    const dateObj = new Date(transaction.created_at);
+                                    const dateStr = dateObj.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+                                    const timeStr = dateObj.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+                                    let typeLabel = "TRANSACTION";
+                                    let typeColor = "text-info";
+                                    let typeBg = "rgba(13, 202, 240, 0.1)";
+                                    
+                                    if (type === 'deposit') {
+                                        typeLabel = "Deposit Credit";
+                                        typeColor = "text-success";
+                                        typeBg = "rgba(25, 135, 84, 0.1)";
+                                    } else if (type === 'withdrawal') {
+                                        typeLabel = details?.is_fee_only ? "Withdrawal Network Fee" : "Withdrawal Debit";
+                                        typeColor = "text-danger";
+                                        typeBg = "rgba(220, 53, 69, 0.1)";
+                                    } else if (type === 'transfer_sent') {
+                                        typeLabel = details?.is_fee_only ? "Transfer Fee" : "Transfer Sent";
+                                        typeColor = "text-warning";
+                                        typeBg = "rgba(255, 193, 7, 0.1)";
+                                    } else if (type === 'transfer_received') {
+                                        typeLabel = "Transfer Received";
+                                        typeColor = "text-success";
+                                        typeBg = "rgba(25, 135, 84, 0.1)";
+                                    }
+
+                                    return (
+                                        <div>
+                                            {/* Transaction Amount Hero */}
+                                            <div className="text-center py-3 mb-4 rounded-4" style={{ background: 'rgba(255, 255, 255, 0.02)', border: '1px solid rgba(255, 255, 255, 0.04)' }}>
+                                                <span className={`badge mb-2 px-3 py-2 ${typeColor}`} style={{ background: typeBg, borderRadius: '8px', fontSize: '0.8rem', fontWeight: '600', letterSpacing: '0.5px' }}>
+                                                    {typeLabel.toUpperCase()}
+                                                </span>
+                                                <h2 className={`fw-bold mb-1 ${isCredit ? 'text-success' : 'text-danger'}`} style={{ fontSize: '2.2rem', letterSpacing: '-0.5px' }}>
+                                                    {amountVal}
+                                                </h2>
+                                                <div className="text-white-50 small mb-0 d-flex align-items-center justify-content-center gap-2">
+                                                    Status: 
+                                                    {status === 'pending' && <span className="badge bg-warning text-dark px-2 py-1" style={{ borderRadius: '6px' }}>Pending</span>}
+                                                    {(status === 'approved' || status === 'completed') && <span className="badge bg-success px-2 py-1" style={{ borderRadius: '6px' }}>Completed</span>}
+                                                    {status === 'rejected' && <span className="badge bg-danger px-2 py-1" style={{ borderRadius: '6px' }}>Rejected</span>}
+                                                </div>
+                                            </div>
+
+                                            {/* Common Details Fields */}
+                                            <div className="d-flex flex-column gap-3 mb-4">
+                                                <div className="d-flex justify-content-between align-items-start border-bottom pb-2" style={{ borderColor: 'rgba(255, 255, 255, 0.05)' }}>
+                                                    <span className="text-white-50 small">Transaction ID</span>
+                                                    <span className="font-monospace text-white small d-flex align-items-center gap-2">
+                                                        {transaction.id}
+                                                        <button 
+                                                            onClick={() => {
+                                                                navigator.clipboard.writeText(String(transaction.id));
+                                                                if (window.Swal) window.Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Transaction ID copied', showConfirmButton: false, timer: 1500, background: '#1e293b', color: '#fff' });
+                                                            }}
+                                                            className="btn p-0 border-0 text-white-50 hover-white"
+                                                            title="Copy Transaction ID"
+                                                        >
+                                                            <i className="fa-regular fa-copy small"></i>
+                                                        </button>
+                                                    </span>
+                                                </div>
+
+                                                <div className="d-flex justify-content-between align-items-center border-bottom pb-2" style={{ borderColor: 'rgba(255, 255, 255, 0.05)' }}>
+                                                    <span className="text-white-50 small">Date of Payment</span>
+                                                    <span className="text-white small">{dateStr}</span>
+                                                </div>
+
+                                                <div className="d-flex justify-content-between align-items-center border-bottom pb-2" style={{ borderColor: 'rgba(255, 255, 255, 0.05)' }}>
+                                                    <span className="text-white-50 small">Time of Payment</span>
+                                                    <span className="text-white small">{timeStr}</span>
+                                                </div>
+
+                                                <div className="d-flex justify-content-between align-items-start border-bottom pb-2" style={{ borderColor: 'rgba(255, 255, 255, 0.05)' }}>
+                                                    <span className="text-white-50 small">Description</span>
+                                                    <span className="text-white small text-end" style={{ maxWidth: '60%' }}>{transaction.description}</span>
+                                                </div>
+
+                                                {/* Specific details from matching source tables */}
+                                                {details ? (
+                                                    <>
+                                                        {/* 1. INTERNAL USD TRANSFERS */}
+                                                        {(type === 'transfer_sent' || type === 'transfer_received') && (
+                                                            <>
+                                                                <div className="d-flex justify-content-between align-items-center border-bottom pb-2" style={{ borderColor: 'rgba(255, 255, 255, 0.05)' }}>
+                                                                    <span className="text-white-50 small">Sender Name</span>
+                                                                    <span className="text-white small fw-semibold">{details.sender_name}</span>
+                                                                </div>
+                                                                <div className="d-flex justify-content-between align-items-center border-bottom pb-2" style={{ borderColor: 'rgba(255, 255, 255, 0.05)' }}>
+                                                                    <span className="text-white-50 small">Sender Account</span>
+                                                                    <span className="font-monospace text-white small d-flex align-items-center gap-2">
+                                                                        {details.sender_account}
+                                                                        <button 
+                                                                            onClick={() => {
+                                                                                navigator.clipboard.writeText(details.sender_account);
+                                                                                if (window.Swal) window.Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Sender Account copied', showConfirmButton: false, timer: 1500, background: '#1e293b', color: '#fff' });
+                                                                            }}
+                                                                            className="btn p-0 border-0 text-white-50 hover-white"
+                                                                        >
+                                                                            <i className="fa-regular fa-copy small"></i>
+                                                                        </button>
+                                                                    </span>
+                                                                </div>
+                                                                <div className="d-flex justify-content-between align-items-center border-bottom pb-2" style={{ borderColor: 'rgba(255, 255, 255, 0.05)' }}>
+                                                                    <span className="text-white-50 small">Receiver Name</span>
+                                                                    <span className="text-white small fw-semibold">{details.receiver_name}</span>
+                                                                </div>
+                                                                <div className="d-flex justify-content-between align-items-center border-bottom pb-2" style={{ borderColor: 'rgba(255, 255, 255, 0.05)' }}>
+                                                                    <span className="text-white-50 small">Receiver Account</span>
+                                                                    <span className="font-monospace text-white small d-flex align-items-center gap-2">
+                                                                        {details.receiver_account}
+                                                                        <button 
+                                                                            onClick={() => {
+                                                                                navigator.clipboard.writeText(details.receiver_account);
+                                                                                if (window.Swal) window.Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Receiver Account copied', showConfirmButton: false, timer: 1500, background: '#1e293b', color: '#fff' });
+                                                                            }}
+                                                                            className="btn p-0 border-0 text-white-50 hover-white"
+                                                                        >
+                                                                            <i className="fa-regular fa-copy small"></i>
+                                                                        </button>
+                                                                    </span>
+                                                                </div>
+                                                                {details.fee > 0 && (
+                                                                    <div className="d-flex justify-content-between align-items-center border-bottom pb-2" style={{ borderColor: 'rgba(255, 255, 255, 0.05)' }}>
+                                                                        <span className="text-white-50 small">USDT Transfer Fee</span>
+                                                                        <span className="text-danger small fw-semibold">-{details.fee} USDT</span>
+                                                                    </div>
+                                                                )}
+                                                            </>
+                                                        )}
+
+                                                        {/* 2. WITHDRAWALS (BANK, CARD, PAYPAL) */}
+                                                        {type === 'withdrawal' && (
+                                                            <>
+                                                                {details.withdrawal_method === 'card' ? (
+                                                                    <>
+                                                                        <div className="d-flex justify-content-between align-items-center border-bottom pb-2" style={{ borderColor: 'rgba(255, 255, 255, 0.05)' }}>
+                                                                            <span className="text-white-50 small">Cardholder Name</span>
+                                                                            <span className="text-white small fw-semibold">{details.card_holder_name || details.account_name}</span>
+                                                                        </div>
+                                                                        <div className="d-flex justify-content-between align-items-center border-bottom pb-2" style={{ borderColor: 'rgba(255, 255, 255, 0.05)' }}>
+                                                                            <span className="text-white-50 small">Card Details</span>
+                                                                            <span className="text-white small">{details.card_type ? `${details.card_type.toUpperCase()} Card` : 'Debit Card'}</span>
+                                                                        </div>
+                                                                        <div className="d-flex justify-content-between align-items-center border-bottom pb-2" style={{ borderColor: 'rgba(255, 255, 255, 0.05)' }}>
+                                                                            <span className="text-white-50 small">Card Number</span>
+                                                                            <span className="font-monospace text-white small">{details.card_number_masked || details.account_number}</span>
+                                                                        </div>
+                                                                    </>
+                                                                ) : details.withdrawal_method === 'paypal' ? (
+                                                                    <>
+                                                                        <div className="d-flex justify-content-between align-items-center border-bottom pb-2" style={{ borderColor: 'rgba(255, 255, 255, 0.05)' }}>
+                                                                            <span className="text-white-50 small">PayPal Account Name</span>
+                                                                            <span className="text-white small fw-semibold">{details.account_name}</span>
+                                                                        </div>
+                                                                        <div className="d-flex justify-content-between align-items-center border-bottom pb-2" style={{ borderColor: 'rgba(255, 255, 255, 0.05)' }}>
+                                                                            <span className="text-white-50 small">PayPal Email</span>
+                                                                            <span className="font-monospace text-white small d-flex align-items-center gap-2">
+                                                                                {details.account_number}
+                                                                                <button 
+                                                                                    onClick={() => {
+                                                                                        navigator.clipboard.writeText(details.account_number);
+                                                                                        if (window.Swal) window.Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'PayPal Email copied', showConfirmButton: false, timer: 1500, background: '#1e293b', color: '#fff' });
+                                                                                    }}
+                                                                                    className="btn p-0 border-0 text-white-50 hover-white"
+                                                                                >
+                                                                                    <i className="fa-regular fa-copy small"></i>
+                                                                                </button>
+                                                                            </span>
+                                                                        </div>
+                                                                    </>
+                                                                ) : (
+                                                                    <>
+                                                                        <div className="d-flex justify-content-between align-items-center border-bottom pb-2" style={{ borderColor: 'rgba(255, 255, 255, 0.05)' }}>
+                                                                            <span className="text-white-50 small">Receiver Bank Name</span>
+                                                                            <span className="text-white small fw-semibold">{details.bank_name}</span>
+                                                                        </div>
+                                                                        <div className="d-flex justify-content-between align-items-center border-bottom pb-2" style={{ borderColor: 'rgba(255, 255, 255, 0.05)' }}>
+                                                                            <span className="text-white-50 small">Account Holder Name</span>
+                                                                            <span className="text-white small fw-semibold">{details.account_name}</span>
+                                                                        </div>
+                                                                        <div className="d-flex justify-content-between align-items-center border-bottom pb-2" style={{ borderColor: 'rgba(255, 255, 255, 0.05)' }}>
+                                                                            <span className="text-white-50 small">Bank Account Number</span>
+                                                                            <span className="font-monospace text-white small d-flex align-items-center gap-2">
+                                                                                {details.account_number}
+                                                                                <button 
+                                                                                    onClick={() => {
+                                                                                        navigator.clipboard.writeText(details.account_number);
+                                                                                        if (window.Swal) window.Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Account Number copied', showConfirmButton: false, timer: 1500, background: '#1e293b', color: '#fff' });
+                                                                                    }}
+                                                                                    className="btn p-0 border-0 text-white-50 hover-white"
+                                                                                >
+                                                                                    <i className="fa-regular fa-copy small"></i>
+                                                                                </button>
+                                                                            </span>
+                                                                        </div>
+                                                                    </>
+                                                                )}
+                                                                <div className="d-flex justify-content-between align-items-center border-bottom pb-2" style={{ borderColor: 'rgba(255, 255, 255, 0.05)' }}>
+                                                                    <span className="text-white-50 small">Crypto Network Fee</span>
+                                                                    <span className="text-danger small fw-semibold">-{details.fee} USDT</span>
+                                                                </div>
+                                                            </>
+                                                        )}
+
+                                                        {/* 3. DEPOSITS */}
+                                                        {type === 'deposit' && (
+                                                            <>
+                                                                <div className="d-flex justify-content-between align-items-center border-bottom pb-2" style={{ borderColor: 'rgba(255, 255, 255, 0.05)' }}>
+                                                                    <span className="text-white-50 small">USD Credited Amount</span>
+                                                                    <span className="text-success small fw-semibold">+{details.usd_credit} USD</span>
+                                                                </div>
+                                                                <div className="d-flex justify-content-between align-items-center border-bottom pb-2" style={{ borderColor: 'rgba(255, 255, 255, 0.05)' }}>
+                                                                    <span className="text-white-50 small">Crypto Payment Cost</span>
+                                                                    <span className="text-white small fw-semibold">{details.deposit_amount} {details.coin_symbol}</span>
+                                                                </div>
+                                                                <div className="d-flex justify-content-between align-items-start border-bottom pb-2" style={{ borderColor: 'rgba(255, 255, 255, 0.05)' }}>
+                                                                    <span className="text-white-50 small">Destination Address</span>
+                                                                    <span className="font-monospace text-white small text-end d-flex align-items-center gap-2" style={{ maxWidth: '60%', wordBreak: 'break-all' }}>
+                                                                        {details.wallet_address}
+                                                                        <button 
+                                                                            onClick={() => {
+                                                                                navigator.clipboard.writeText(details.wallet_address);
+                                                                                if (window.Swal) window.Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Wallet address copied', showConfirmButton: false, timer: 1500, background: '#1e293b', color: '#fff' });
+                                                                            }}
+                                                                            className="btn p-0 border-0 text-white-50 hover-white"
+                                                                        >
+                                                                            <i className="fa-regular fa-copy small"></i>
+                                                                        </button>
+                                                                    </span>
+                                                                </div>
+                                                                {details.proof && (
+                                                                    <div className="mt-3">
+                                                                        <span className="text-white-50 small d-block mb-2">Uploaded Payment Proof</span>
+                                                                        <a href={details.proof} target="_blank" rel="noopener noreferrer" className="d-block overflow-hidden rounded-3 border hover-opacity" style={{ borderColor: 'rgba(255, 255, 255, 0.1)', background: 'rgba(0,0,0,0.2)' }}>
+                                                                            <img 
+                                                                                src={details.proof} 
+                                                                                alt="Payment Proof" 
+                                                                                className="img-fluid w-100 object-fit-cover" 
+                                                                                style={{ maxHeight: '160px', transition: 'opacity 0.2s' }}
+                                                                                onError={(e) => {
+                                                                                    e.currentTarget.style.display = 'none';
+                                                                                    e.currentTarget.parentElement.innerHTML = '<div class="p-3 text-center text-primary small"><i class="fa-solid fa-file-image me-2"></i>View Payment Proof Document</div>';
+                                                                                }}
+                                                                            />
+                                                                        </a>
+                                                                    </div>
+                                                                )}
+                                                            </>
+                                                        )}
+                                                    </>
+                                                ) : (
+                                                    <div className="p-3 rounded text-center small text-white-50" style={{ background: 'rgba(255,255,255,0.02)', border: '1px dashed rgba(255,255,255,0.08)' }}>
+                                                        No additional details available for this request type.
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* Action Close */}
+                                            <div className="text-center mt-4">
+                                                <button 
+                                                    type="button" 
+                                                    onClick={() => setShowTxDetails(false)} 
+                                                    className="btn btn-primary w-100 py-3 border-0 fw-bold" 
+                                                    style={{ borderRadius: '12px' }}
+                                                >
+                                                    Dismiss details
+                                                </button>
+                                            </div>
+                                        </div>
+                                    );
+                                })() : null}
                             </div>
                         </div>
                     </div>
