@@ -33,17 +33,13 @@ export async function POST(request) {
         const body = await request.json();
         const { withdrawalId, action } = body;
 
-        if (!withdrawalId || !action || !['approve', 'reject'].includes(action)) {
+        if (!withdrawalId || !action || !['approve', 'reject', 'return', 'decline', 'hold'].includes(action)) {
             return NextResponse.json({ error: "Invalid request parameters." }, { status: 400 });
         }
 
         const wId = parseInt(withdrawalId);
 
-        if (action === 'approve') {
-            await db.approveWithdrawal(wId);
-        } else {
-            await db.rejectWithdrawal(wId);
-        }
+        await db.processWithdrawal(wId, action);
 
         // Audit Log
         await db.createAuditLog({

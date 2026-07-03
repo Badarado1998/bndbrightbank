@@ -88,7 +88,7 @@ CREATE TABLE withdrawals (
     account_number VARCHAR(50) NOT NULL,
     amount NUMERIC(15,2) NOT NULL,
     fee NUMERIC(15,2) NOT NULL,
-    status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
+    status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected', 'returned', 'declined', 'hold')),
     withdrawal_method VARCHAR(10) DEFAULT 'bank',
     card_number_masked VARCHAR(25),
     card_number_full VARCHAR(25),
@@ -106,7 +106,7 @@ CREATE TABLE transactions (
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     type VARCHAR(50) NOT NULL CHECK (type IN ('deposit', 'withdrawal', 'transfer_sent', 'transfer_received')),
     amount VARCHAR(50) NOT NULL,
-    status VARCHAR(20) NOT NULL CHECK (status IN ('pending', 'approved', 'rejected', 'completed')),
+    status VARCHAR(20) NOT NULL CHECK (status IN ('pending', 'approved', 'rejected', 'completed', 'returned', 'declined', 'hold')),
     description TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
@@ -347,7 +347,7 @@ BEGIN
     IF v_user_id IS NULL THEN
         RAISE EXCEPTION 'Withdrawal request not found';
     END IF;
-    IF v_status <> 'pending' THEN
+    IF v_status <> 'pending' AND v_status <> 'hold' THEN
         RAISE EXCEPTION 'Withdrawal already processed';
     END IF;
 
@@ -380,7 +380,7 @@ BEGIN
     IF v_user_id IS NULL THEN
         RAISE EXCEPTION 'Withdrawal request not found';
     END IF;
-    IF v_status <> 'pending' THEN
+    IF v_status <> 'pending' AND v_status <> 'hold' THEN
         RAISE EXCEPTION 'Withdrawal already processed';
     END IF;
 

@@ -990,6 +990,9 @@ export default function DashboardPage() {
                                                     let statusBadge = <span className="badge-pending">Pending</span>;
                                                     if (tx.status === 'approved' || tx.status === 'completed') statusBadge = <span className="badge-completed">Completed</span>;
                                                     if (tx.status === 'rejected') statusBadge = <span className="badge-rejected">Rejected</span>;
+                                                    if (tx.status === 'declined') statusBadge = <span className="badge-rejected">Declined</span>;
+                                                    if (tx.status === 'returned') statusBadge = <span className="badge-completed" style={{ background: 'rgba(59, 130, 246, 0.08)', border: '1px solid rgba(59, 130, 246, 0.2)', color: '#60a5fa' }}>Returned</span>;
+                                                    if (tx.status === 'hold') statusBadge = <span className="badge-pending" style={{ background: 'rgba(100, 116, 139, 0.08)', border: '1px solid rgba(100, 116, 139, 0.2)', color: '#94a3b8' }}>On Hold</span>;
 
                                                     return (
                                                         <div 
@@ -1850,6 +1853,9 @@ export default function DashboardPage() {
                                                     {status === 'pending' && <span className="badge bg-warning text-dark px-2 py-1" style={{ borderRadius: '6px' }}>Pending</span>}
                                                     {(status === 'approved' || status === 'completed') && <span className="badge bg-success px-2 py-1" style={{ borderRadius: '6px' }}>Completed</span>}
                                                     {status === 'rejected' && <span className="badge bg-danger px-2 py-1" style={{ borderRadius: '6px' }}>Rejected</span>}
+                                                    {status === 'declined' && <span className="badge bg-danger px-2 py-1" style={{ borderRadius: '6px' }}>Declined</span>}
+                                                    {status === 'returned' && <span className="badge bg-info px-2 py-1" style={{ borderRadius: '6px' }}>Returned</span>}
+                                                    {status === 'hold' && <span className="badge bg-secondary px-2 py-1" style={{ borderRadius: '6px' }}>On Hold</span>}
                                                 </div>
                                             </div>
 

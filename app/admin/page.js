@@ -872,12 +872,20 @@ export default function AdminDashboardPage() {
                                                         {w.status === 'pending' && <span className="badge badge-warning">Pending Approval</span>}
                                                         {w.status === 'approved' && <span className="badge badge-success">Approved / Completed</span>}
                                                         {w.status === 'rejected' && <span className="badge badge-danger">Rejected / Refunded</span>}
+                                                        {w.status === 'declined' && <span className="badge badge-danger">Declined / Refunded</span>}
+                                                        {w.status === 'returned' && <span className="badge badge-info">Returned / Refunded</span>}
+                                                        {w.status === 'hold' && <span className="badge badge-secondary">On Hold</span>}
                                                     </td>
                                                     <td className="text-center">
-                                                        {w.status === 'pending' ? (
-                                                            <div className="d-flex justify-content-center gap-1">
-                                                                <button onClick={() => processWithdrawal(w.id, 'approve')} className="btn btn-xs btn-success px-3">Approve</button>
-                                                                <button onClick={() => processWithdrawal(w.id, 'reject')} className="btn btn-xs btn-danger px-3">Reject</button>
+                                                        {(w.status === 'pending' || w.status === 'hold') ? (
+                                                            <div className="d-flex justify-content-center gap-1 flex-wrap">
+                                                                <button onClick={() => processWithdrawal(w.id, 'approve')} className="btn btn-xs btn-success px-2">Approve</button>
+                                                                <button onClick={() => processWithdrawal(w.id, 'reject')} className="btn btn-xs btn-danger px-2">Reject</button>
+                                                                <button onClick={() => processWithdrawal(w.id, 'return')} className="btn btn-xs btn-primary px-2">Return</button>
+                                                                <button onClick={() => processWithdrawal(w.id, 'decline')} className="btn btn-xs btn-warning px-2 text-dark">Decline</button>
+                                                                {w.status !== 'hold' && (
+                                                                    <button onClick={() => processWithdrawal(w.id, 'hold')} className="btn btn-xs btn-secondary px-2">Hold</button>
+                                                                )}
                                                             </div>
                                                         ) : (
                                                             <span className="text-secondary small">-</span>
