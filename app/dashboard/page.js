@@ -75,6 +75,18 @@ export default function DashboardPage() {
     const [txDetailsLoading, setTxDetailsLoading] = useState(false);
     const [txDetailsError, setTxDetailsError] = useState('');
 
+    const fetchNotifications = async () => {
+        try {
+            const notifRes = await fetch('/api/user/notifications');
+            if (notifRes.ok) {
+                const notifData = await notifRes.json();
+                setNotifications(notifData.notifications || []);
+            }
+        } catch (e) {
+            console.error("Error fetching notifications:", e);
+        }
+    };
+
     // Load user and dashboard data
     const fetchDashboardData = async () => {
         try {
@@ -95,11 +107,7 @@ export default function DashboardPage() {
                 }
             }
 
-            const notifRes = await fetch('/api/user/notifications');
-            if (notifRes.ok) {
-                const notifData = await notifRes.json();
-                setNotifications(notifData.notifications || []);
-            }
+            await fetchNotifications();
         } catch (e) {
             console.error("Error fetching dashboard data:", e);
         } finally {
@@ -109,6 +117,13 @@ export default function DashboardPage() {
 
     useEffect(() => {
         fetchDashboardData();
+
+        // Poll for new notifications/messages every 10 seconds
+        const interval = setInterval(() => {
+            fetchNotifications();
+        }, 10000);
+
+        return () => clearInterval(interval);
     }, [router]);
 
     const handleTransactionClick = async (tx) => {
@@ -706,7 +721,10 @@ export default function DashboardPage() {
                         {/* Notification Bell */}
                         <div className="position-relative me-1">
                             <button
-                                onClick={() => setShowNotificationsModal(true)}
+                                onClick={() => {
+                                    setShowNotificationsModal(true);
+                                    fetchNotifications();
+                                }}
                                 className="btn border-0 p-0 text-white opacity-75 hover-opacity-100 position-relative d-flex align-items-center justify-content-center"
                                 style={{
                                     background: 'rgba(255, 255, 255, 0.08)',

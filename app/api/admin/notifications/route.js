@@ -32,10 +32,14 @@ export async function POST(request) {
         }
 
         const body = await request.json();
-        const { userId, title, message } = body;
+        let { userId, title, message } = body;
 
-        if (!userId || !title || !message) {
-            return NextResponse.json({ error: "Missing required fields (userId, title, message)." }, { status: 400 });
+        if (!title || !title.trim()) {
+            title = 'Message from Admin';
+        }
+
+        if (!userId || !message || !message.trim()) {
+            return NextResponse.json({ error: "Missing required fields (userId, message)." }, { status: 400 });
         }
 
         const user = await db.getUserById(userId);
