@@ -2,6 +2,28 @@ import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/session';
 import db from '@/lib/db';
 
+export async function GET(request) {
+    try {
+        const session = await getSession();
+        if (!session || session.role !== 'admin') {
+            return NextResponse.json({ error: "Unauthorized. Admin privileges required." }, { status: 403 });
+        }
+
+        const { searchParams } = new URL(request.url);
+        const userId = searchParams.get('userId');
+
+        if (!userId) {
+            return NextResponse.json({ error: "Missing required parameter: userId." }, { status: 400 });
+        }
+
+        const notifications = await db.getUserNotifications(userId);
+        return NextResponse.json({ notifications }, { status: 200 });
+    } catch (error) {
+        console.error("GET admin notifications error:", error);
+        return NextResponse.json({ error: "Internal server error." }, { status: 500 });
+    }
+}
+
 export async function POST(request) {
     try {
         const session = await getSession();
@@ -21,18 +43,13 @@ export async function POST(request) {
             return NextResponse.json({ error: "User not found." }, { status: 404 });
         }
 
-        const greeting = `Hello ${user.name},\n\n`;
-        const fullMessage = message.trim().startsWith('Hello') || message.trim().startsWith('Dear')
-            ? message
-            : greeting + message;
-
-        await db.createNotification({ userId, title, message: fullMessage });
+        await db.createNotification({ userId, title, message: message.trim() });
 
         // Audit Log
         await db.createAuditLog({
             user_id: session.id,
             action: 'send_notification',
-            details: `Sent message to User: ${user.name} (${user.email}). Title: "${title}". Message: "${fullMessage}"`,
+            details: `Sent message to User: ${user.name} (${user.email}). Title: "${title}". Message: "${message.trim()}"`,
             ip_address: request.headers.get('x-forwarded-for') || ''
         });
 

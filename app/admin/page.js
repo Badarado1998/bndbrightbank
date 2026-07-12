@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function AdminDashboardPage() {
@@ -44,6 +44,9 @@ export default function AdminDashboardPage() {
     const [messageTitle, setMessageTitle] = useState('');
     const [messageText, setMessageText] = useState('');
     const [messageLoading, setMessageLoading] = useState(false);
+    const [messageHistory, setMessageHistory] = useState([]);
+    const [historyLoading, setHistoryLoading] = useState(false);
+    const chatEndRef = useRef(null);
 
     // Verification check & load
     const loadAdminData = async () => {
@@ -120,6 +123,12 @@ export default function AdminDashboardPage() {
         };
     }, [router]);
 
+    useEffect(() => {
+        if (chatEndRef.current) {
+            chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+        }
+    }, [messageHistory]);
+
     const handleLogout = async () => {
         await fetch('/api/auth/logout', { method: 'POST' });
         router.push('/login');
@@ -185,16 +194,30 @@ export default function AdminDashboardPage() {
         setEditCryptoBalances(cryptos);
     };
 
-    const openMessageUserModal = (user) => {
+    const openMessageUserModal = async (user) => {
         setMessageUser(user);
-        setMessageTitle('Account Notification');
+        setMessageTitle('Message from Admin');
         setMessageText('');
         setShowMessageModal(true);
+
+        setHistoryLoading(true);
+        setMessageHistory([]);
+        try {
+            const res = await fetch(`/api/admin/notifications?userId=${user.id}`);
+            if (res.ok) {
+                const resData = await res.json();
+                setMessageHistory(resData.notifications || []);
+            }
+        } catch (e) {
+            console.error("Error fetching message history:", e);
+        } finally {
+            setHistoryLoading(false);
+        }
     };
 
     const handleSendMessageSubmit = async () => {
-        if (!messageTitle || !messageText) {
-            alert("Please fill in both title and message body.");
+        if (!messageText.trim()) {
+            alert("Please type a message.");
             return;
         }
         setMessageLoading(true);
@@ -204,34 +227,27 @@ export default function AdminDashboardPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     userId: messageUser.id,
-                    title: messageTitle,
-                    message: messageText
+                    title: messageTitle || 'Message from Admin',
+                    message: messageText.trim()
                 })
             });
             if (res.ok) {
-                setShowMessageModal(false);
-                setMessageUser(null);
-                setMessageTitle('');
+                const newMsg = {
+                    id: Date.now(),
+                    title: messageTitle || 'Message from Admin',
+                    message: messageText.trim(),
+                    is_read: false,
+                    created_at: new Date().toISOString()
+                };
+                setMessageHistory(prev => [newMsg, ...prev]);
                 setMessageText('');
-                if (window.Swal) {
-                    window.Swal.fire({
-                        icon: 'success',
-                        title: 'Notification Sent',
-                        text: 'Your notification message has been sent successfully.',
-                        background: '#1e293b',
-                        color: '#fff',
-                        confirmButtonColor: '#6366f1'
-                    });
-                } else {
-                    alert("Notification sent successfully!");
-                }
             } else {
                 const data = await res.json();
-                alert(data.error || "Failed to send notification.");
+                alert(data.error || "Failed to send message.");
             }
         } catch (e) {
             console.error(e);
-            alert("Error sending notification.");
+            alert("Error sending message.");
         } finally {
             setMessageLoading(false);
         }
@@ -1100,36 +1116,71 @@ export default function AdminDashboardPage() {
             {/* --- DIALOG MODAL: MESSAGE USER --- */}
             {showMessageModal && messageUser && (
                 <div className="modal d-block" tabIndex="-1" style={{ background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(3px)' }}>
-                    <div className="modal-dialog modal-dialog-centered">
+                    <div className="modal-dialog modal-dialog-centered modal-lg">
                         <div className="modal-content">
                             <div className="modal-header">
-                                <h5 className="modal-title font-weight-bold">Send Direct Notification</h5>
+                                <h5 className="modal-title font-weight-bold">Message {messageUser.name}</h5>
                                 <button type="button" className="close" onClick={() => setShowMessageModal(false)}>&times;</button>
                             </div>
                             <div className="modal-body d-flex flex-column gap-3">
                                 <div>
                                     <span className="text-secondary small d-block">RECIPIENT</span>
-                                    <b>{messageUser.name}</b>
+                                    <b>{messageUser.name} ({messageUser.email})</b>
                                 </div>
 
                                 <div className="form-group mb-0">
-                                    <label className="small font-weight-bold">Notification Title</label>
-                                    <input 
-                                        type="text" 
-                                        className="form-control" 
-                                        placeholder="e.g. Account Verification Update"
-                                        value={messageTitle}
-                                        onChange={e => setMessageTitle(e.target.value)}
-                                        required
-                                    />
+                                    <label className="small font-weight-bold mb-2">Message History</label>
+                                    {historyLoading ? (
+                                        <div className="text-center py-4 text-white-50 small rounded-3" style={{ background: 'rgba(0,0,0,0.15)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                            <span className="spinner-border spinner-border-sm mr-2 text-info"></span>
+                                            Loading message history...
+                                        </div>
+                                    ) : messageHistory && messageHistory.length > 0 ? (
+                                        <div 
+                                            className="d-flex flex-column gap-2 p-3 rounded-3" 
+                                            style={{ 
+                                                maxHeight: '220px', 
+                                                overflowY: 'auto', 
+                                                background: 'rgba(0,0,0,0.15)', 
+                                                border: '1px solid rgba(255,255,255,0.05)',
+                                                borderRadius: '12px'
+                                            }}
+                                        >
+                                            {[...messageHistory].reverse().map((msg) => (
+                                                <div 
+                                                    key={msg.id} 
+                                                    className="p-2.5 rounded-3 align-self-start text-left" 
+                                                    style={{ 
+                                                        maxWidth: '85%', 
+                                                        background: 'rgba(255,255,255,0.03)', 
+                                                        border: '1px solid rgba(255,255,255,0.04)',
+                                                        borderRadius: '10px 10px 10px 0px'
+                                                    }}
+                                                >
+                                                    <div className="d-flex justify-content-between align-items-center gap-4 mb-1">
+                                                        <span className="font-weight-bold text-info small" style={{ fontSize: '0.75rem' }}>{msg.title || 'Message'}</span>
+                                                        <span className="text-secondary" style={{ fontSize: '0.7rem' }}>
+                                                            {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - {new Date(msg.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                                                        </span>
+                                                    </div>
+                                                    <p className="mb-0 text-white-50 small" style={{ whiteSpace: 'pre-line', fontSize: '0.8rem' }}>{msg.message}</p>
+                                                </div>
+                                            ))}
+                                            <div ref={chatEndRef} />
+                                        </div>
+                                    ) : (
+                                        <div className="text-center py-4 text-white-50 small rounded-3" style={{ background: 'rgba(0,0,0,0.15)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                            No message history with this user.
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div className="form-group mb-0">
-                                    <label className="small font-weight-bold">Message Content</label>
+                                    <label className="small font-weight-bold mb-1">New Message</label>
                                     <textarea 
                                         className="form-control" 
-                                        rows="5"
-                                        placeholder="Write notification message here..."
+                                        rows="3"
+                                        placeholder="Type message here..."
                                         value={messageText}
                                         onChange={e => setMessageText(e.target.value)}
                                         required
@@ -1137,10 +1188,10 @@ export default function AdminDashboardPage() {
                                 </div>
                             </div>
                             <div className="modal-footer">
-                                <button type="button" className="btn btn-secondary" onClick={() => setShowMessageModal(false)} disabled={messageLoading}>Cancel</button>
-                                <button type="button" className="btn btn-info font-weight-bold text-white" onClick={handleSendMessageSubmit} disabled={messageLoading}>
+                                <button type="button" className="btn btn-secondary" onClick={() => setShowMessageModal(false)} disabled={messageLoading}>Close</button>
+                                <button type="button" className="btn btn-info font-weight-bold text-white px-4" onClick={handleSendMessageSubmit} disabled={messageLoading}>
                                     {messageLoading ? <span className="spinner-border spinner-border-sm mr-2"></span> : <i className="fas fa-paper-plane mr-2"></i>}
-                                    Send Notification
+                                    Send
                                 </button>
                             </div>
                         </div>
