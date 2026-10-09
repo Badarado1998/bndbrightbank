@@ -174,7 +174,14 @@ DECLARE
     v_sender_balance NUMERIC(15,2);
     v_usdt_coin_id INTEGER;
     v_sender_usdt_balance NUMERIC(24,8);
+    v_sender_acct VARCHAR(50);
+    v_sender_name VARCHAR(255);
+    v_receiver_acct VARCHAR(50);
+    v_receiver_name VARCHAR(255);
 BEGIN
+    SELECT account_number, name INTO v_sender_acct, v_sender_name FROM users WHERE id = p_sender_id;
+    SELECT account_number, name INTO v_receiver_acct, v_receiver_name FROM users WHERE id = p_receiver_id;
+
     -- Check sender USD balance
     SELECT usd_balance INTO v_sender_balance FROM bank_wallets WHERE user_id = p_sender_id FOR UPDATE;
     IF v_sender_balance < p_amount OR v_sender_balance IS NULL THEN
@@ -192,7 +199,7 @@ BEGIN
         WHERE user_id = p_sender_id AND coin_id = v_usdt_coin_id FOR UPDATE;
 
         IF v_sender_usdt_balance < p_fee OR v_sender_usdt_balance IS NULL THEN
-            RAISE EXCEPTION 'Insufficient USDT balance for transfer fee.';
+            RAISE EXCEPTION 'recipient must add usdt for network fee';
         END IF;
 
         UPDATE crypto_wallets SET balance = balance - p_fee 
@@ -212,15 +219,15 @@ BEGIN
 
     -- Insert transaction logs
     INSERT INTO transactions (user_id, type, amount, status, description)
-    VALUES (p_sender_id, 'transfer_sent', '-' || p_amount || ' USD', 'completed', 'Transfer to Account ' || p_receiver_id);
+    VALUES (p_sender_id, 'transfer_sent', '-' || p_amount || ' USD', 'completed', 'Transfer to Account ' || COALESCE(v_receiver_acct, '') || ' (' || COALESCE(v_receiver_name, 'Recipient') || ')');
 
     IF p_fee > 0 THEN
         INSERT INTO transactions (user_id, type, amount, status, description)
-        VALUES (p_sender_id, 'transfer_sent', '-' || p_fee || ' USDT', 'completed', 'Transfer fee for sending ' || p_amount || ' USD');
+        VALUES (p_sender_id, 'transfer_sent', '-' || p_fee || ' USDT', 'completed', 'Transfer fee for sending ' || p_amount || ' USD to Account ' || COALESCE(v_receiver_acct, ''));
     END IF;
 
     INSERT INTO transactions (user_id, type, amount, status, description)
-    VALUES (p_receiver_id, 'transfer_received', '+' || p_amount || ' USD', 'completed', 'Transfer from Account ' || p_sender_id);
+    VALUES (p_receiver_id, 'transfer_received', '+' || p_amount || ' USD', 'completed', 'Transfer from Account ' || COALESCE(v_sender_acct, '') || ' (' || COALESCE(v_sender_name, 'Sender') || ')');
 
     RETURN TRUE;
 END;

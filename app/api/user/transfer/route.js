@@ -11,7 +11,8 @@ export async function GET(request) {
         }
 
         const { searchParams } = new URL(request.url);
-        const accountNumber = searchParams.get('accountNumber');
+        const rawAccountNumber = searchParams.get('accountNumber');
+        const accountNumber = rawAccountNumber ? rawAccountNumber.trim() : '';
 
         if (!accountNumber) {
             return NextResponse.json({ error: "Account number is required." }, { status: 400 });
@@ -50,7 +51,8 @@ export async function POST(request) {
         }
 
         const body = await request.json();
-        const { recipientAccountNumber, amount: rawAmount } = body;
+        const { recipientAccountNumber: rawRecipientAcct, amount: rawAmount } = body;
+        const recipientAccountNumber = rawRecipientAcct ? String(rawRecipientAcct).trim() : '';
         const amount = parseFloat(rawAmount);
 
         if (!recipientAccountNumber || isNaN(amount) || amount <= 0) {
