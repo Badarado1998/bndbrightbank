@@ -24,6 +24,7 @@ CREATE TABLE users (
     routing_number VARCHAR(20) NOT NULL,
     status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'suspended')),
     role VARCHAR(20) DEFAULT 'user' CHECK (role IN ('user', 'admin')),
+    country VARCHAR(100) DEFAULT 'United States',
     must_change_password SMALLINT DEFAULT 0,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
@@ -168,7 +169,9 @@ CREATE OR REPLACE FUNCTION execute_transfer_rpc(
     p_sender_id UUID,
     p_receiver_id UUID,
     p_amount NUMERIC(15,2),
-    p_fee NUMERIC(15,2)
+    p_fee NUMERIC(15,2) DEFAULT 0,
+    p_sender_acc VARCHAR(20) DEFAULT NULL,
+    p_receiver_acc VARCHAR(20) DEFAULT NULL
 ) RETURNS BOOLEAN AS $$
 DECLARE
     v_sender_balance NUMERIC(15,2);
@@ -230,6 +233,18 @@ BEGIN
     VALUES (p_receiver_id, 'transfer_received', '+' || p_amount || ' USD', 'completed', 'Transfer from Account ' || COALESCE(v_sender_acct, '') || ' (' || COALESCE(v_sender_name, 'Sender') || ')');
 
     RETURN TRUE;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Alias for p_usdt_fee parameter naming
+CREATE OR REPLACE FUNCTION execute_transfer_rpc(
+    p_sender_id UUID,
+    p_receiver_id UUID,
+    p_amount NUMERIC(15,2),
+    p_usdt_fee NUMERIC(15,2)
+) RETURNS BOOLEAN AS $$
+BEGIN
+    RETURN execute_transfer_rpc(p_sender_id, p_receiver_id, p_amount, p_usdt_fee, NULL, NULL);
 END;
 $$ LANGUAGE plpgsql;
 
