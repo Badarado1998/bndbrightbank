@@ -55,23 +55,11 @@ export async function PUT(request) {
         }
 
         if (role && role !== user.role) {
-            // Update role if changed
-            if (isSupabase) {
-                const { error } = await supabase.from('users').update({ role }).eq('id', userId);
-                if (error) throw error;
-            } else {
-                await sqlite.run(`UPDATE users SET role = ? WHERE id = ?`, [role, userId]);
-            }
+            await db.updateUserRole(userId, role);
         }
 
         if (name && name !== user.name) {
-            // Update name
-            if (isSupabase) {
-                const { error } = await supabase.from('users').update({ name }).eq('id', userId);
-                if (error) throw error;
-            } else {
-                await sqlite.run(`UPDATE users SET name = ? WHERE id = ?`, [name, userId]);
-            }
+            await db.updateUserName(userId, name);
         }
 
         // 2. Update balances (Admin manual adjustments)
@@ -138,7 +126,4 @@ export async function DELETE(request) {
     }
 }
 
-// Check helper variables
-const isSupabase = db.getMode() === 'supabase';
-const supabase = isSupabase ? require('@/lib/supabase') : null;
-const sqlite = (!isSupabase && db.getMode() !== 'mysql') ? require('@/lib/sqlite') : null;
+
