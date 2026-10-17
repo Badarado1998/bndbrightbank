@@ -46,3 +46,47 @@ export async function PUT(request) {
         return NextResponse.json({ error: "Internal server error." }, { status: 500 });
     }
 }
+
+// POST: Send reply message from user to admin
+export async function POST(request) {
+    try {
+        const session = await getSession();
+        if (!session) {
+            return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+        }
+
+        const body = await request.json();
+        const { message } = body;
+
+        if (!message || !message.trim()) {
+            return NextResponse.json({ error: "Message content is required." }, { status: 400 });
+        }
+
+        const user = await db.getUserById(session.id);
+        if (!user) {
+            return NextResponse.json({ error: "User profile not found." }, { status: 404 });
+        }
+
+        const title = `Reply from ${user.name}`;
+
+        await db.createNotification({
+            userId: session.id,
+            title,
+            message: message.trim(),
+            senderRole: 'user'
+        });
+
+        // Audit log
+        await db.createAuditLog({
+            user_id: session.id,
+            action: 'user_reply_notification',
+            details: `User ${user.name} (${user.email}) sent a reply: "${message.trim()}"`,
+            ip_address: request.headers.get('x-forwarded-for') || ''
+        });
+
+        return NextResponse.json({ message: "Reply sent successfully." }, { status: 201 });
+    } catch (error) {
+        console.error("POST user notification reply error:", error);
+        return NextResponse.json({ error: "Internal server error." }, { status: 500 });
+    }
+}

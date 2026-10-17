@@ -236,6 +236,7 @@ export default function AdminDashboardPage() {
                     id: Date.now(),
                     title: messageTitle || 'Message from Admin',
                     message: messageText.trim(),
+                    sender_role: 'admin',
                     is_read: false,
                     created_at: new Date().toISOString()
                 };
@@ -1146,26 +1147,39 @@ export default function AdminDashboardPage() {
                                                 borderRadius: '12px'
                                             }}
                                         >
-                                            {[...messageHistory].reverse().map((msg) => (
-                                                <div 
-                                                    key={msg.id} 
-                                                    className="p-2.5 rounded-3 align-self-start text-left" 
-                                                    style={{ 
-                                                        maxWidth: '85%', 
-                                                        background: 'rgba(255,255,255,0.03)', 
-                                                        border: '1px solid rgba(255,255,255,0.04)',
-                                                        borderRadius: '10px 10px 10px 0px'
-                                                    }}
-                                                >
-                                                    <div className="d-flex justify-content-between align-items-center gap-4 mb-1">
-                                                        <span className="font-weight-bold text-info small" style={{ fontSize: '0.75rem' }}>{msg.title || 'Message'}</span>
-                                                        <span className="text-secondary" style={{ fontSize: '0.7rem' }}>
-                                                            {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - {new Date(msg.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}
-                                                        </span>
+                                            {[...messageHistory].reverse().map((msg) => {
+                                                const isUserReply = msg.sender_role === 'user';
+                                                return (
+                                                    <div 
+                                                        key={msg.id} 
+                                                        className={`p-2.5 rounded-3 ${isUserReply ? 'align-self-start text-left' : 'align-self-end text-left'}`}
+                                                        style={{ 
+                                                            maxWidth: '85%', 
+                                                            background: isUserReply ? 'rgba(16, 185, 129, 0.08)' : 'rgba(99, 102, 241, 0.08)', 
+                                                            border: isUserReply ? '1px solid rgba(16, 185, 129, 0.2)' : '1px solid rgba(99, 102, 241, 0.2)',
+                                                            borderRadius: isUserReply ? '12px 12px 12px 0px' : '12px 12px 0px 12px'
+                                                        }}
+                                                    >
+                                                        <div className="d-flex justify-content-between align-items-center gap-4 mb-1">
+                                                            <div className="d-flex align-items-center gap-2">
+                                                                <span 
+                                                                    className={`badge ${isUserReply ? 'bg-success' : 'bg-primary'} px-2 py-0.5`} 
+                                                                    style={{ fontSize: '0.65rem' }}
+                                                                >
+                                                                    {isUserReply ? (messageUser?.name || 'User') : 'Admin'}
+                                                                </span>
+                                                                <span className="font-weight-bold text-white small" style={{ fontSize: '0.75rem' }}>
+                                                                    {msg.title || (isUserReply ? 'User Reply' : 'Message')}
+                                                                </span>
+                                                            </div>
+                                                            <span className="text-secondary" style={{ fontSize: '0.7rem' }}>
+                                                                {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - {new Date(msg.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                                                            </span>
+                                                        </div>
+                                                        <p className="mb-0 text-white-50 small" style={{ whiteSpace: 'pre-line', fontSize: '0.8rem' }}>{msg.message}</p>
                                                     </div>
-                                                    <p className="mb-0 text-white-50 small" style={{ whiteSpace: 'pre-line', fontSize: '0.8rem' }}>{msg.message}</p>
-                                                </div>
-                                            ))}
+                                                );
+                                            })}
                                             <div ref={chatEndRef} />
                                         </div>
                                     ) : (

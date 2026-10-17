@@ -47,7 +47,7 @@ export async function POST(request) {
             return NextResponse.json({ error: "User not found." }, { status: 404 });
         }
 
-        await db.createNotification({ userId, title, message: message.trim() });
+        await db.createNotification({ userId, title, message: message.trim(), senderRole: 'admin' });
 
         // Audit Log
         await db.createAuditLog({

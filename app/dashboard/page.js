@@ -65,6 +65,8 @@ export default function DashboardPage() {
     // Notifications state
     const [notifications, setNotifications] = useState([]);
     const [showNotificationsModal, setShowNotificationsModal] = useState(false);
+    const [userReplyText, setUserReplyText] = useState('');
+    const [userReplyLoading, setUserReplyLoading] = useState(false);
 
     // Transaction filter state
     const [txFilter, setTxFilter] = useState('all');
@@ -184,6 +186,39 @@ export default function DashboardPage() {
             }
         } catch (e) {
             console.error("Error marking all notifications read:", e);
+        }
+    };
+
+    const handleSendUserReply = async (e) => {
+        if (e) e.preventDefault();
+        if (!userReplyText.trim()) return;
+        setUserReplyLoading(true);
+        try {
+            const res = await fetch('/api/user/notifications', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: userReplyText.trim() })
+            });
+            if (res.ok) {
+                const newReply = {
+                    id: Date.now(),
+                    title: `Reply from ${user?.name || 'You'}`,
+                    message: userReplyText.trim(),
+                    sender_role: 'user',
+                    is_read: true,
+                    created_at: new Date().toISOString()
+                };
+                setNotifications(prev => [newReply, ...prev]);
+                setUserReplyText('');
+            } else {
+                const err = await res.json();
+                alert(err.error || 'Failed to send reply.');
+            }
+        } catch (err) {
+            console.error('Error sending reply:', err);
+            alert('Failed to send reply.');
+        } finally {
+            setUserReplyLoading(false);
         }
     };
 
@@ -1696,8 +1731,8 @@ export default function DashboardPage() {
                         <div className="modal-content border-0 text-white p-4" style={{ borderRadius: '24px', background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)' }}>
                             <div className="modal-header border-0 pb-0 d-flex justify-content-between align-items-center">
                                 <h5 className="modal-title fw-bold text-white d-flex align-items-center gap-2">
-                                    <i className="fa-regular fa-bell text-warning"></i>
-                                    Account Notifications
+                                    <i className="fa-regular fa-comments text-warning"></i>
+                                    Messages & Notifications
                                 </h5>
                                 <div className="d-flex align-items-center gap-2">
                                     {notifications.some(n => !n.is_read) && (
@@ -1717,19 +1752,25 @@ export default function DashboardPage() {
                                 {notifications.length === 0 ? (
                                     <div className="text-center py-5 text-muted">
                                         <i className="fa-regular fa-envelope-open fs-1 mb-3 opacity-50"></i>
-                                        <p className="mb-0">You have no notifications at this time.</p>
+                                        <p className="mb-0">You have no notifications or messages at this time.</p>
                                     </div>
                                 ) : (
                                     <div className="d-flex flex-column gap-3">
                                         {notifications.map((n) => {
                                             const isUnread = !n.is_read;
+                                            const isUserReply = n.sender_role === 'user';
                                             return (
                                                 <div 
                                                     key={n.id}
-                                                    className="p-3 d-flex justify-content-between align-items-start gap-3 transition-all duration-200"
+                                                    className={`p-3 d-flex justify-content-between align-items-start gap-3 transition-all duration-200 ${isUserReply ? 'ms-auto' : ''}`}
                                                     style={{
-                                                        background: isUnread ? 'rgba(99, 102, 241, 0.08)' : 'rgba(255, 255, 255, 0.02)',
-                                                        border: isUnread ? '1px solid rgba(99, 102, 241, 0.25)' : '1px solid rgba(255, 255, 255, 0.05)',
+                                                        maxWidth: isUserReply ? '88%' : '100%',
+                                                        background: isUserReply 
+                                                            ? 'rgba(16, 185, 129, 0.08)' 
+                                                            : (isUnread ? 'rgba(99, 102, 241, 0.08)' : 'rgba(255, 255, 255, 0.02)'),
+                                                        border: isUserReply 
+                                                            ? '1px solid rgba(16, 185, 129, 0.25)' 
+                                                            : (isUnread ? '1px solid rgba(99, 102, 241, 0.25)' : '1px solid rgba(255, 255, 255, 0.05)'),
                                                         borderRadius: '16px'
                                                     }}
                                                 >
@@ -1741,14 +1782,24 @@ export default function DashboardPage() {
                                                                     width: '10px',
                                                                     height: '10px',
                                                                     borderRadius: '50%',
-                                                                    background: isUnread ? '#6366f1' : '#64748b',
-                                                                    boxShadow: isUnread ? '0 0 8px #6366f1' : 'none'
+                                                                    background: isUserReply ? '#10b981' : (isUnread ? '#6366f1' : '#64748b'),
+                                                                    boxShadow: isUserReply 
+                                                                        ? '0 0 8px rgba(16, 185, 129, 0.5)' 
+                                                                        : (isUnread ? '0 0 8px #6366f1' : 'none')
                                                                 }}
                                                             />
                                                         </div>
                                                         <div className="d-flex flex-column gap-1" style={{ flex: 1 }}>
                                                             <div className="d-flex flex-wrap justify-content-between align-items-baseline gap-2">
-                                                                <h6 className="fw-bold text-white mb-0" style={{ fontSize: '15px' }}>{n.title}</h6>
+                                                                <div className="d-flex align-items-center gap-2">
+                                                                    <span 
+                                                                        className={`badge ${isUserReply ? 'bg-success' : 'bg-primary'} px-2 py-0.5`} 
+                                                                        style={{ fontSize: '10px' }}
+                                                                    >
+                                                                        {isUserReply ? 'You' : 'Admin'}
+                                                                    </span>
+                                                                    <h6 className="fw-bold text-white mb-0" style={{ fontSize: '15px' }}>{n.title}</h6>
+                                                                </div>
                                                                 <span className="text-white-50" style={{ fontSize: '11px' }}>
                                                                     {new Date(n.created_at).toLocaleString()}
                                                                 </span>
@@ -1759,7 +1810,7 @@ export default function DashboardPage() {
                                                         </div>
                                                     </div>
                                                     
-                                                    {isUnread && (
+                                                    {isUnread && !isUserReply && (
                                                         <button
                                                             onClick={() => handleMarkNotificationRead(n.id)}
                                                             className="btn btn-sm btn-link p-1 text-indigo opacity-75 hover-opacity-100"
@@ -1774,6 +1825,42 @@ export default function DashboardPage() {
                                         })}
                                     </div>
                                 )}
+
+                                {/* Interactive User Reply Input */}
+                                <div className="pt-3 border-top border-secondary border-opacity-25 mt-4">
+                                    <label className="small text-white-50 mb-2 fw-semibold d-flex align-items-center gap-2">
+                                        <i className="fa-regular fa-comment-dots text-info"></i>
+                                        Reply to Administrator
+                                    </label>
+                                    <div className="input-group">
+                                        <input 
+                                            type="text" 
+                                            className="form-control text-white" 
+                                            placeholder="Type your reply message here..." 
+                                            value={userReplyText}
+                                            onChange={e => setUserReplyText(e.target.value)}
+                                            onKeyDown={e => { if (e.key === 'Enter') handleSendUserReply(e); }}
+                                            disabled={userReplyLoading}
+                                            style={{ borderRadius: '12px 0 0 12px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
+                                        />
+                                        <button 
+                                            type="button" 
+                                            onClick={handleSendUserReply} 
+                                            className="btn btn-primary px-4 fw-semibold d-flex align-items-center gap-2"
+                                            disabled={userReplyLoading || !userReplyText.trim()}
+                                            style={{ borderRadius: '0 12px 12px 0', background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)', border: 'none' }}
+                                        >
+                                            {userReplyLoading ? (
+                                                <span className="spinner-border spinner-border-sm"></span>
+                                            ) : (
+                                                <>
+                                                    <span>Send Reply</span>
+                                                    <i className="fa-regular fa-paper-plane"></i>
+                                                </>
+                                            )}
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                             
                             <div className="modal-footer border-0 pt-0">
