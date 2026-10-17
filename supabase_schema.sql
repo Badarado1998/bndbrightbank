@@ -426,62 +426,40 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-
 -- ==============================================================================
--- 13. Supabase Storage Buckets & Policies for Payment Proofs
+-- 13. Supabase Storage Buckets Setup: 'proofs' and 'proof' with Public Access
 -- ==============================================================================
-
--- Create 'proof' bucket with public access (10MB limit)
 INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-VALUES (
-    'proof', 
-    'proof', 
-    true, 
-    10485760, 
-    ARRAY['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf']
-)
-ON CONFLICT (id) DO UPDATE SET 
-    public = true,
-    file_size_limit = 10485760;
+VALUES 
+    ('proofs', 'proofs', true, 52428800, NULL),
+    ('proof', 'proof', true, 52428800, NULL)
+ON CONFLICT (id) DO UPDATE SET public = true;
 
--- Create 'proofs' bucket with public access (alias compatibility)
-INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-VALUES (
-    'proofs', 
-    'proofs', 
-    true, 
-    10485760, 
-    ARRAY['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf']
-)
-ON CONFLICT (id) DO UPDATE SET 
-    public = true,
-    file_size_limit = 10485760;
-
--- Enable RLS on storage.objects
-ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
-
--- Idempotent creation of storage policies
+-- Enable public read and upload access policies for storage objects
 DO $$
 BEGIN
-    DROP POLICY IF EXISTS "Public Proofs Bucket Read" ON storage.objects;
-    DROP POLICY IF EXISTS "Public Proofs Bucket Insert" ON storage.objects;
-    DROP POLICY IF EXISTS "Public Proofs Bucket Update" ON storage.objects;
-EXCEPTION
-    WHEN OTHERS THEN NULL;
+    -- 1. Public Read Access
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies WHERE schemaname = 'storage' AND tablename = 'objects' AND policyname = 'Public Access to proofs'
+    ) THEN
+        CREATE POLICY "Public Access to proofs" ON storage.objects
+        FOR SELECT USING (bucket_id IN ('proofs', 'proof'));
+    END IF;
+
+    -- 2. Allow Insert / Upload Access
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies WHERE schemaname = 'storage' AND tablename = 'objects' AND policyname = 'Allow uploads to proofs'
+    ) THEN
+        CREATE POLICY "Allow uploads to proofs" ON storage.objects
+        FOR INSERT WITH CHECK (bucket_id IN ('proofs', 'proof'));
+    END IF;
+
+    -- 3. Allow Update Access
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies WHERE schemaname = 'storage' AND tablename = 'objects' AND policyname = 'Allow update to proofs'
+    ) THEN
+        CREATE POLICY "Allow update to proofs" ON storage.objects
+        FOR UPDATE USING (bucket_id IN ('proofs', 'proof'));
+    END IF;
 END $$;
-
--- Policy 1: Allow public read access to receipts in 'proof' and 'proofs' buckets
-CREATE POLICY "Public Proofs Bucket Read" 
-ON storage.objects FOR SELECT 
-USING (bucket_id IN ('proof', 'proofs'));
-
--- Policy 2: Allow all users (authenticated, anon, service role) to upload receipts
-CREATE POLICY "Public Proofs Bucket Insert" 
-ON storage.objects FOR INSERT 
-WITH CHECK (bucket_id IN ('proof', 'proofs'));
-
--- Policy 3: Allow updates if required
-CREATE POLICY "Public Proofs Bucket Update" 
-ON storage.objects FOR UPDATE 
-USING (bucket_id IN ('proof', 'proofs'));
 
