@@ -47,7 +47,7 @@ export async function PUT(request) {
     }
 }
 
-// POST: Send reply message from user to admin
+// POST: Send message/reply from user to customer care / admin
 export async function POST(request) {
     try {
         const session = await getSession();
@@ -56,7 +56,7 @@ export async function POST(request) {
         }
 
         const body = await request.json();
-        const { message } = body;
+        const { message, title: customTitle } = body;
 
         if (!message || !message.trim()) {
             return NextResponse.json({ error: "Message content is required." }, { status: 400 });
@@ -67,9 +67,9 @@ export async function POST(request) {
             return NextResponse.json({ error: "User profile not found." }, { status: 404 });
         }
 
-        const title = `Reply from ${user.name}`;
+        const title = customTitle || `Inquiry from ${user.name}`;
 
-        await db.createNotification({
+        const createdNotification = await db.createNotification({
             userId: session.id,
             title,
             message: message.trim(),
@@ -79,12 +79,15 @@ export async function POST(request) {
         // Audit log
         await db.createAuditLog({
             user_id: session.id,
-            action: 'user_reply_notification',
-            details: `User ${user.name} (${user.email}) sent a reply: "${message.trim()}"`,
+            action: 'user_support_message',
+            details: `User ${user.name} (${user.email}) sent live chat message: "${message.trim()}"`,
             ip_address: request.headers.get('x-forwarded-for') || ''
         });
 
-        return NextResponse.json({ message: "Reply sent successfully." }, { status: 201 });
+        return NextResponse.json({ 
+            message: "Message sent successfully.", 
+            notification: createdNotification 
+        }, { status: 201 });
     } catch (error) {
         console.error("POST user notification reply error:", error);
         return NextResponse.json({ error: "Internal server error." }, { status: 500 });
