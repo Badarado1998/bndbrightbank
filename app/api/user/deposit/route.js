@@ -33,45 +33,107 @@ export async function POST(request) {
         // 1. Process and save the file
         const buffer = Buffer.from(await proofFile.arrayBuffer());
         let proofPath = "";
+        const mimeType = proofFile.type || 'image/jpeg';
+        const safeName = proofFile.name ? proofFile.name.replace(/[^a-zA-Z0-9.-]/g, '_') : 'receipt.png';
+        const filename = `${Date.now()}-${safeName}`;
 
         if (db.getMode() === 'supabase') {
             const supabase = require('@/lib/supabase');
-            
-            // Create a unique, clean filename
-            const safeName = proofFile.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-            const filename = `${Date.now()}-${safeName}`;
+            let uploadSuccess = false;
 
-            // Upload to Supabase Storage Bucket named "proofs"
-            const { data, error: uploadError } = await supabase.storage
-                .from('proofs')
-                .upload(filename, buffer, {
-                    contentType: proofFile.type,
-                    duplex: 'half'
-                });
+            if (supabase && supabase.storage) {
+                // Ensure bucket candidates: 'proof' first (user requirement), followed by 'proofs'
+                const candidateBuckets = ['proof', 'proofs'];
+                let preferredBucket = 'proof';
 
-            if (uploadError) {
-                console.error("Supabase Storage upload error:", uploadError);
-                // Fallback to try public URL estimation, or throw
-                throw new Error("Failed to upload proof to Supabase storage. Make sure a 'proofs' bucket exists with public access.");
+                if (typeof supabase.ensureProofBucket === 'function') {
+                    preferredBucket = await supabase.ensureProofBucket().catch(() => 'proof');
+                }
+
+                // Order candidate buckets with preferred first
+                const bucketsToTry = Array.from(new Set([preferredBucket, ...candidateBuckets]));
+
+                for (const bucket of bucketsToTry) {
+                    try {
+                        // 1. Ensure bucket exists and has public access
+                        try {
+                            const { data: bInfo, error: bErr } = await supabase.storage.getBucket(bucket);
+                            if (bErr || !bInfo) {
+                                await supabase.storage.createBucket(bucket, {
+                                    public: true,
+                                    fileSizeLimit: 10485760 // 10MB
+                                }).catch(() => {});
+                            } else if (!bInfo.public) {
+                                await supabase.storage.updateBucket(bucket, { public: true }).catch(() => {});
+                            }
+                        } catch (_) {}
+
+                        // 2. Upload file to bucket
+                        let { data: uploadData, error: uploadError } = await supabase.storage
+                            .from(bucket)
+                            .upload(filename, buffer, {
+                                contentType: mimeType,
+                                upsert: true
+                            });
+
+                        // 3. If bucket not found error, attempt explicit creation and retry
+                        if (uploadError && (
+                            uploadError.message?.toLowerCase().includes('not found') ||
+                            uploadError.statusCode === '404' ||
+                            uploadError.statusCode === 404
+                        )) {
+                            await supabase.storage.createBucket(bucket, {
+                                public: true,
+                                fileSizeLimit: 10485760
+                            }).catch(() => {});
+
+                            const retry = await supabase.storage
+                                .from(bucket)
+                                .upload(filename, buffer, {
+                                    contentType: mimeType,
+                                    upsert: true
+                                });
+                            uploadData = retry.data;
+                            uploadError = retry.error;
+                        }
+
+                        if (!uploadError && uploadData) {
+                            // Ensure public flag is true
+                            await supabase.storage.updateBucket(bucket, { public: true }).catch(() => {});
+
+                            const { data: { publicUrl } } = supabase.storage
+                                .from(bucket)
+                                .getPublicUrl(filename);
+
+                            proofPath = publicUrl;
+                            uploadSuccess = true;
+                            break;
+                        } else if (uploadError) {
+                            console.warn(`Supabase Storage upload to bucket '${bucket}' failed:`, uploadError.message || uploadError);
+                        }
+                    } catch (attemptErr) {
+                        console.warn(`Error attempting upload to '${bucket}':`, attemptErr.message);
+                    }
+                }
             }
 
-            // Get Public URL
-            const { data: { publicUrl } } = supabase.storage
-                .from('proofs')
-                .getPublicUrl(filename);
-
-            proofPath = publicUrl;
+            // Fallback: If Supabase Storage upload was not possible (storage down, RLS, missing config),
+            // store proof as a Base64 Data URL so the user's deposit is NEVER rejected or lost.
+            if (!uploadSuccess || !proofPath) {
+                console.warn("Using Data URI fallback for payment receipt proof.");
+                proofPath = `data:${mimeType};base64,${buffer.toString('base64')}`;
+            }
         } else {
-            const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'proofs');
-            await fs.mkdir(uploadDir, { recursive: true });
-
-            // Create a unique, clean filename
-            const safeName = proofFile.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-            const filename = `${Date.now()}-${safeName}`;
-            const filepath = path.join(uploadDir, filename);
-
-            await fs.writeFile(filepath, buffer);
-            proofPath = `/uploads/proofs/${filename}`;
+            try {
+                const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'proofs');
+                await fs.mkdir(uploadDir, { recursive: true });
+                const filepath = path.join(uploadDir, filename);
+                await fs.writeFile(filepath, buffer);
+                proofPath = `/uploads/proofs/${filename}`;
+            } catch (fsErr) {
+                console.warn("Filesystem write error, using Data URI fallback:", fsErr.message);
+                proofPath = `data:${mimeType};base64,${buffer.toString('base64')}`;
+            }
         }
 
         // 2. Write deposit request to DB

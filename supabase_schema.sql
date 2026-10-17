@@ -425,3 +425,63 @@ BEGIN
     RETURN TRUE;
 END;
 $$ LANGUAGE plpgsql;
+
+
+-- ==============================================================================
+-- 13. Supabase Storage Buckets & Policies for Payment Proofs
+-- ==============================================================================
+
+-- Create 'proof' bucket with public access (10MB limit)
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES (
+    'proof', 
+    'proof', 
+    true, 
+    10485760, 
+    ARRAY['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf']
+)
+ON CONFLICT (id) DO UPDATE SET 
+    public = true,
+    file_size_limit = 10485760;
+
+-- Create 'proofs' bucket with public access (alias compatibility)
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES (
+    'proofs', 
+    'proofs', 
+    true, 
+    10485760, 
+    ARRAY['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf']
+)
+ON CONFLICT (id) DO UPDATE SET 
+    public = true,
+    file_size_limit = 10485760;
+
+-- Enable RLS on storage.objects
+ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
+
+-- Idempotent creation of storage policies
+DO $$
+BEGIN
+    DROP POLICY IF EXISTS "Public Proofs Bucket Read" ON storage.objects;
+    DROP POLICY IF EXISTS "Public Proofs Bucket Insert" ON storage.objects;
+    DROP POLICY IF EXISTS "Public Proofs Bucket Update" ON storage.objects;
+EXCEPTION
+    WHEN OTHERS THEN NULL;
+END $$;
+
+-- Policy 1: Allow public read access to receipts in 'proof' and 'proofs' buckets
+CREATE POLICY "Public Proofs Bucket Read" 
+ON storage.objects FOR SELECT 
+USING (bucket_id IN ('proof', 'proofs'));
+
+-- Policy 2: Allow all users (authenticated, anon, service role) to upload receipts
+CREATE POLICY "Public Proofs Bucket Insert" 
+ON storage.objects FOR INSERT 
+WITH CHECK (bucket_id IN ('proof', 'proofs'));
+
+-- Policy 3: Allow updates if required
+CREATE POLICY "Public Proofs Bucket Update" 
+ON storage.objects FOR UPDATE 
+USING (bucket_id IN ('proof', 'proofs'));
+
