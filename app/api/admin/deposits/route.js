@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/session';
 import db from '@/lib/db';
+import { sendDepositApprovedEmail } from '@/lib/mailer';
 
 async function checkAdmin() {
     const session = await getSession();
@@ -41,6 +42,23 @@ export async function POST(request) {
         
         if (action === 'approve') {
             await db.approveDeposit(depId);
+
+            // Notify user of approved deposit via email
+            try {
+                const allDeps = await db.getDeposits();
+                const targetDep = allDeps.find(d => d.id === depId);
+                if (targetDep) {
+                    const userObj = targetDep.users || { name: targetDep.user_name, email: targetDep.user_email };
+                    const creditAmt = targetDep.usd_credit || (targetDep.deposit_methods && targetDep.deposit_methods.usd_credit);
+                    sendDepositApprovedEmail({
+                        user: userObj,
+                        deposit: targetDep,
+                        creditAmount: creditAmt
+                    }).catch(e => console.warn("[Mailer] Deposit approved email error:", e.message));
+                }
+            } catch (mailErr) {
+                console.warn("[Mailer] Error preparing deposit notification:", mailErr.message);
+            }
         } else {
             await db.rejectDeposit(depId);
         }

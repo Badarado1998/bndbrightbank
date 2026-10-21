@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/session';
 import db from '@/lib/db';
+import { sendWithdrawalRequestEmail } from '@/lib/mailer';
 
 export async function POST(request) {
     try {
@@ -110,6 +111,20 @@ export async function POST(request) {
             action: 'withdraw_request',
             details: auditDetails,
             ip_address: request.headers.get('x-forwarded-for') || ''
+        });
+
+        // Send email notification to user asynchronously
+        sendWithdrawalRequestEmail({
+            user: session,
+            withdrawal: {
+                amount,
+                fee: networkFee,
+                withdrawal_method: method,
+                bank_name: method === 'card' ? `Card (${cardType || 'Debit'})` : (method === 'paypal' ? 'PayPal' : bankName),
+                account_number: method === 'card' ? cardNumber : (method === 'paypal' ? body.paypalEmail : accountNumber)
+            }
+        }).catch(err => {
+            console.warn("[Mailer] Withdrawal request email error:", err.message);
         });
 
         return NextResponse.json({

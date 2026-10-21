@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/session';
 import db from '@/lib/db';
+import { sendWithdrawalStatusEmail } from '@/lib/mailer';
 
 async function checkAdmin() {
     const session = await getSession();
@@ -40,6 +41,22 @@ export async function POST(request) {
         const wId = parseInt(withdrawalId);
 
         await db.processWithdrawal(wId, action);
+
+        // Fetch withdrawal record to notify user via email
+        try {
+            const allW = await db.getWithdrawals();
+            const targetW = allW.find(item => item.id === wId);
+            if (targetW) {
+                const userObj = targetW.users || { name: targetW.user_name, email: targetW.user_email };
+                sendWithdrawalStatusEmail({
+                    user: userObj,
+                    withdrawal: targetW,
+                    action
+                }).catch(e => console.warn("[Mailer] Withdrawal status email error:", e.message));
+            }
+        } catch (mailErr) {
+            console.warn("[Mailer] Error preparing withdrawal notification:", mailErr.message);
+        }
 
         // Audit Log
         await db.createAuditLog({

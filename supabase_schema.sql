@@ -151,7 +151,15 @@ INSERT INTO settings (key, value) VALUES
 ('transfer_fee_ratio_usd', '5000'),
 ('transfer_fee_ratio_usdt', '1'),
 ('withdrawal_fee_usdt', '5'),
-('network_fee_usdt', '5')
+('network_fee_usdt', '5'),
+('smtp_host', 'smtp.gmail.com'),
+('smtp_port', '587'),
+('smtp_secure', '0'),
+('smtp_user', 'clintondye6@gmail.com'),
+('smtp_pass', 'ljhqowfjfusseevo'),
+('smtp_from', 'clintondye6@gmail.com'),
+('smtp_from_name', 'PND Bank Alerts'),
+('smtp_enabled', '1')
 ON CONFLICT (key) DO NOTHING;
 
 INSERT INTO users (id, name, email, password, account_number, routing_number, status, role, must_change_password) VALUES 

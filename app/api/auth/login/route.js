@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import db from '@/lib/db';
 import { setSession } from '@/lib/session';
+import { sendLoginAlertEmail } from '@/lib/mailer';
 
 export async function POST(request) {
     try {
@@ -42,12 +43,22 @@ export async function POST(request) {
         };
         await setSession(sessionUser);
 
+        const clientIp = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || '';
+
         // Audit Log
         await db.createAuditLog({
             user_id: user.id,
             action: 'login',
             details: `User logged in. Role: ${user.role}`,
-            ip_address: request.headers.get('x-forwarded-for') || ''
+            ip_address: clientIp
+        });
+
+        // Send login alert email asynchronously (won't block login response)
+        sendLoginAlertEmail({
+            user: sessionUser,
+            ip: clientIp
+        }).catch(err => {
+            console.warn("[Mailer] Background login alert error:", err.message);
         });
 
         return NextResponse.json({

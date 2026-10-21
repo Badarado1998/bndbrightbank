@@ -37,6 +37,20 @@ export default function AdminDashboardPage() {
     const [feeRatioUsdt, setFeeRatioUsdt] = useState('');
     const [feeWithdrawalUsdt, setFeeWithdrawalUsdt] = useState('');
     const [feeNetworkUsdt, setFeeNetworkUsdt] = useState('');
+    // SMTP Email Server Settings
+    const [smtpHost, setSmtpHost] = useState('smtp.gmail.com');
+    const [smtpPort, setSmtpPort] = useState('587');
+    const [smtpSecure, setSmtpSecure] = useState('0');
+    const [smtpUser, setSmtpUser] = useState('clintondye6@gmail.com');
+    const [smtpPass, setSmtpPass] = useState('ljhqowfjfusseevo');
+    const [smtpFrom, setSmtpFrom] = useState('clintondye6@gmail.com');
+    const [smtpFromName, setSmtpFromName] = useState('PND Bank Alerts');
+    const [smtpEnabled, setSmtpEnabled] = useState('1');
+    const [testEmail, setTestEmail] = useState('clintondye6@gmail.com');
+    const [testLoading, setTestLoading] = useState(false);
+    const [testResult, setTestResult] = useState(null);
+    const [smtpSaving, setSmtpSaving] = useState(false);
+    const [smtpSaveMessage, setSmtpSaveMessage] = useState('');
 
     // Messaging user form
     const [showMessageModal, setShowMessageModal] = useState(false);
@@ -97,6 +111,14 @@ export default function AdminDashboardPage() {
                 setFeeRatioUsdt(s.transfer_fee_ratio_usdt);
                 setFeeWithdrawalUsdt(s.withdrawal_fee_usdt || '5');
                 setFeeNetworkUsdt(s.network_fee_usdt);
+                setSmtpHost(s.smtp_host || 'smtp.gmail.com');
+                setSmtpPort(s.smtp_port || '587');
+                setSmtpSecure(s.smtp_secure || '0');
+                setSmtpUser(s.smtp_user || 'clintondye6@gmail.com');
+                setSmtpPass(s.smtp_pass || 'ljhqowfjfusseevo');
+                setSmtpFrom(s.smtp_from || 'clintondye6@gmail.com');
+                setSmtpFromName(s.smtp_from_name || 'PND Bank Alerts');
+                setSmtpEnabled(s.smtp_enabled !== undefined ? s.smtp_enabled : '1');
             }
 
             const dashRes = await fetch('/api/user/dashboard');
@@ -384,6 +406,72 @@ export default function AdminDashboardPage() {
             }
         } catch (e) {
             console.error(e);
+        }
+    };
+
+    const handleSaveSmtpSettings = async (e) => {
+        if (e) e.preventDefault();
+        setSmtpSaving(true);
+        setSmtpSaveMessage('');
+        try {
+            const res = await fetch('/api/admin/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    smtp_host: smtpHost,
+                    smtp_port: smtpPort,
+                    smtp_secure: smtpSecure,
+                    smtp_user: smtpUser,
+                    smtp_pass: smtpPass,
+                    smtp_from: smtpFrom,
+                    smtp_from_name: smtpFromName,
+                    smtp_enabled: smtpEnabled
+                })
+            });
+            if (res.ok) {
+                setSmtpSaveMessage("SMTP settings saved successfully.");
+                setTimeout(() => setSmtpSaveMessage(''), 4000);
+                loadAdminData();
+            } else {
+                const err = await res.json();
+                alert(err.error || "Failed to save SMTP settings.");
+            }
+        } catch (e) {
+            console.error(e);
+            alert("Error saving SMTP settings.");
+        } finally {
+            setSmtpSaving(false);
+        }
+    };
+
+    const handleTestSmtp = async (e) => {
+        if (e) e.preventDefault();
+        setTestLoading(true);
+        setTestResult(null);
+        try {
+            const res = await fetch('/api/admin/smtp-test', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    testEmail,
+                    smtp_host: smtpHost,
+                    smtp_port: smtpPort,
+                    smtp_secure: smtpSecure,
+                    smtp_user: smtpUser,
+                    smtp_pass: smtpPass,
+                    smtp_from: smtpFrom,
+                    smtp_from_name: smtpFromName
+                })
+            });
+            const data = await res.json();
+            setTestResult(data);
+        } catch (e) {
+            setTestResult({
+                success: false,
+                error: e.message || "Failed to execute SMTP test."
+            });
+        } finally {
+            setTestLoading(false);
         }
     };
 
@@ -959,63 +1047,262 @@ export default function AdminDashboardPage() {
                         </div>
                     )}
 
-                    {/* --- VIEW 7: FEE SETTINGS --- */}
+                    {/* --- VIEW 7: PLATFORM & SMTP SETTINGS --- */}
                     {activeTab === 'settings' && (
                         <div>
                             <div className="content-header p-0 mb-4">
-                                <h1 className="m-0 font-weight-bold text-dark">Global Fee Configurations</h1>
+                                <h1 className="m-0 font-weight-bold text-dark">System & Security Settings</h1>
+                                <p className="text-secondary small mb-0">Configure transaction fee ratios, automated email notifications, and SMTP credentials.</p>
                             </div>
-                            <div className="card card-primary">
-                                <form onSubmit={handleSaveSettings}>
-                                    <div className="card-body d-flex flex-column gap-4" style={{ maxWidth: '500px' }}>
-                                        <div>
-                                            <h6 className="font-weight-bold mb-2">USD Internal Transfer Fee Rules</h6>
-                                            <div className="row g-2 align-items-center">
-                                                <div className="col-auto">Every</div>
-                                                <div className="col">
-                                                    <input 
-                                                        type="number" 
-                                                        className="form-control" 
-                                                        value={feeRatioUsd}
-                                                        onChange={e => setFeeRatioUsd(e.target.value)}
-                                                        required
-                                                    />
-                                                </div>
-                                                <div className="col-auto">USD Transferred, Requires</div>
-                                                <div className="col">
-                                                    <input 
-                                                        type="number" 
-                                                        className="form-control" 
-                                                        value={feeRatioUsdt}
-                                                        onChange={e => setFeeRatioUsdt(e.target.value)}
-                                                        required
-                                                    />
-                                                </div>
-                                                <div className="col-auto">USDT</div>
-                                            </div>
+
+                            <div className="row g-4">
+                                {/* Card 1: Fee Configurations */}
+                                <div className="col-lg-6">
+                                    <div className="card card-primary card-outline h-100 shadow-sm">
+                                        <div className="card-header bg-white py-3 border-bottom">
+                                            <h5 className="card-title font-weight-bold m-0 text-dark"><i className="fa-solid fa-coins mr-2 text-primary"></i>Global Transaction Fee Rules</h5>
                                         </div>
+                                        <form onSubmit={handleSaveSettings}>
+                                            <div className="card-body d-flex flex-column gap-3">
+                                                <div>
+                                                    <label className="font-weight-bold small text-muted text-uppercase mb-2">Internal USD Transfer Fee Rule</label>
+                                                    <div className="d-flex align-items-center gap-2 flex-wrap">
+                                                        <span>Every</span>
+                                                        <input 
+                                                            type="number" 
+                                                            className="form-control d-inline-block" 
+                                                            style={{ width: '110px' }}
+                                                            value={feeRatioUsd}
+                                                            onChange={e => setFeeRatioUsd(e.target.value)}
+                                                            required
+                                                        />
+                                                        <span>USD requires</span>
+                                                        <input 
+                                                            type="number" 
+                                                            className="form-control d-inline-block" 
+                                                            style={{ width: '90px' }}
+                                                            value={feeRatioUsdt}
+                                                            onChange={e => setFeeRatioUsdt(e.target.value)}
+                                                            required
+                                                        />
+                                                        <span className="font-weight-bold text-warning">USDT</span>
+                                                    </div>
+                                                    <small className="text-muted d-block mt-1">Deducted from sender's USDT wallet for each internal transfer threshold.</small>
+                                                </div>
 
-                                        <hr className="my-1" />
+                                                <hr className="my-2" />
 
-                                        <div>
-                                            <label className="font-weight-bold mb-1">USD Withdrawal Network Fee (USDT)</label>
-                                            <div className="input-group">
+                                                <div>
+                                                    <label className="font-weight-bold small text-muted text-uppercase mb-1">USD Withdrawal Network Fee (USDT)</label>
+                                                    <div className="input-group">
+                                                        <input 
+                                                            type="number" 
+                                                            className="form-control" 
+                                                            value={feeNetworkUsdt}
+                                                            onChange={e => setFeeNetworkUsdt(e.target.value)}
+                                                            required
+                                                        />
+                                                        <span className="input-group-text bg-light font-weight-bold text-warning">USDT</span>
+                                                    </div>
+                                                    <small className="text-muted d-block mt-1">Network clearance fee deducted from client USDT balance during bank, card, or PayPal withdrawals.</small>
+                                                </div>
+                                            </div>
+                                            <div className="card-footer bg-light py-3 border-top">
+                                                <button type="submit" className="btn btn-primary font-weight-bold px-4"><i className="fa-solid fa-floppy-disk mr-2"></i>Save Fee Settings</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+
+                                {/* Card 2: Test SMTP Connection */}
+                                <div className="col-lg-6">
+                                    <div className="card card-outline card-success h-100 shadow-sm">
+                                        <div className="card-header bg-white py-3 border-bottom d-flex align-items-center justify-content-between">
+                                            <h5 className="card-title font-weight-bold m-0 text-dark"><i className="fa-solid fa-envelope-circle-check mr-2 text-success"></i>Test SMTP Connection</h5>
+                                            <span className="badge badge-success px-2 py-1">Diagnostic Utility</span>
+                                        </div>
+                                        <div className="card-body d-flex flex-column gap-3">
+                                            <p className="text-secondary small mb-2">Test your SMTP handshake and send an immediate verification email to verify that clients receive login alerts, withdrawal notices, and transaction receipts.</p>
+                                            <div>
+                                                <label className="font-weight-bold small text-muted text-uppercase mb-1">Test Recipient Email Address</label>
                                                 <input 
-                                                    type="number" 
+                                                    type="email" 
                                                     className="form-control" 
-                                                    value={feeNetworkUsdt}
-                                                    onChange={e => setFeeNetworkUsdt(e.target.value)}
+                                                    value={testEmail}
+                                                    onChange={e => setTestEmail(e.target.value)}
+                                                    placeholder="clintondye6@gmail.com"
                                                     required
                                                 />
-                                                <span className="input-group-text bg-light font-weight-bold">USDT</span>
+                                                <small className="text-muted">Verification email with connection diagnostics will be sent to this address.</small>
                                             </div>
-                                            <small className="text-secondary">Deducted from the user's USDT wallet during a bank withdrawal request.</small>
+
+                                            {testResult && (
+                                                <div className={`alert ${testResult.success ? 'alert-success' : 'alert-danger'} mb-0 mt-2 p-3`} style={{ borderRadius: '8px' }}>
+                                                    <div className="d-flex align-items-center gap-2 font-weight-bold mb-1">
+                                                        <i className={`fa-solid ${testResult.success ? 'fa-circle-check text-success' : 'fa-triangle-exclamation text-danger'}`}></i>
+                                                        <span>{testResult.success ? 'Connection Successful!' : 'Connection Failed'}</span>
+                                                    </div>
+                                                    <div className="small">{testResult.message || testResult.error}</div>
+                                                    {testResult.guidance && (
+                                                        <div className="small mt-2 pt-2 border-top border-danger border-opacity-25" style={{ background: 'rgba(0,0,0,0.03)', padding: '6px', borderRadius: '4px' }}>
+                                                            <strong>Recommended Action:</strong> {testResult.guidance}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="card-footer bg-light py-3 border-top">
+                                            <button 
+                                                type="button" 
+                                                onClick={handleTestSmtp}
+                                                disabled={testLoading}
+                                                className="btn btn-success font-weight-bold px-4"
+                                            >
+                                                {testLoading ? (
+                                                    <><span className="spinner-border spinner-border-sm mr-2" role="status"></span>Testing Connection...</>
+                                                ) : (
+                                                    <><i className="fa-solid fa-paper-plane mr-2"></i>Test SMTP Connection</>
+                                                )}
+                                            </button>
                                         </div>
                                     </div>
-                                    <div className="card-footer">
-                                        <button type="submit" className="btn btn-primary font-weight-bold px-4">Update Settings</button>
+                                </div>
+
+                                {/* Card 3: SMTP Mail Server Configuration */}
+                                <div className="col-12">
+                                    <div className="card card-outline card-info shadow-sm">
+                                        <div className="card-header bg-white py-3 border-bottom d-flex align-items-center justify-content-between">
+                                            <h5 className="card-title font-weight-bold m-0 text-dark"><i className="fa-solid fa-server mr-2 text-info"></i>SMTP Email Server Credentials & Notifications</h5>
+                                            <div className="d-flex align-items-center gap-2">
+                                                <span className="small font-weight-bold text-muted">Notifications Status:</span>
+                                                <span className={`badge ${smtpEnabled === '1' ? 'badge-success' : 'badge-secondary'} px-2 py-1`}>
+                                                    {smtpEnabled === '1' ? 'ACTIVE' : 'DISABLED'}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <form onSubmit={handleSaveSmtpSettings}>
+                                            <div className="card-body">
+                                                {smtpSaveMessage && (
+                                                    <div className="alert alert-success p-2 small mb-4">
+                                                        <i className="fa-solid fa-circle-check mr-2"></i>{smtpSaveMessage}
+                                                    </div>
+                                                )}
+                                                <div className="row g-3">
+                                                    <div className="col-md-3">
+                                                        <label className="font-weight-bold small text-muted text-uppercase mb-1">SMTP Host</label>
+                                                        <input 
+                                                            type="text" 
+                                                            className="form-control" 
+                                                            value={smtpHost}
+                                                            onChange={e => setSmtpHost(e.target.value)}
+                                                            placeholder="smtp.gmail.com"
+                                                            required
+                                                        />
+                                                        <small className="text-muted">e.g. smtp.gmail.com</small>
+                                                    </div>
+                                                    <div className="col-md-2">
+                                                        <label className="font-weight-bold small text-muted text-uppercase mb-1">Port</label>
+                                                        <input 
+                                                            type="number" 
+                                                            className="form-control" 
+                                                            value={smtpPort}
+                                                            onChange={e => setSmtpPort(e.target.value)}
+                                                            placeholder="587"
+                                                            required
+                                                        />
+                                                        <small className="text-muted">587 (TLS) or 465 (SSL)</small>
+                                                    </div>
+                                                    <div className="col-md-3">
+                                                        <label className="font-weight-bold small text-muted text-uppercase mb-1">Encryption Mode</label>
+                                                        <select 
+                                                            className="form-control" 
+                                                            value={smtpSecure}
+                                                            onChange={e => setSmtpSecure(e.target.value)}
+                                                        >
+                                                            <option value="0">TLS / STARTTLS (Port 587)</option>
+                                                            <option value="1">Direct SSL (Port 465)</option>
+                                                        </select>
+                                                        <small className="text-muted">Matches server encryption</small>
+                                                    </div>
+                                                    <div className="col-md-4">
+                                                        <label className="font-weight-bold small text-muted text-uppercase mb-1">Notification Dispatch Toggle</label>
+                                                        <select 
+                                                            className="form-control" 
+                                                            value={smtpEnabled}
+                                                            onChange={e => setSmtpEnabled(e.target.value)}
+                                                        >
+                                                            <option value="1">Enabled - Send Email on Login, Withdrawals, Transfers & Notices</option>
+                                                            <option value="0">Disabled - Pause Automated Emails</option>
+                                                        </select>
+                                                        <small className="text-muted">Global switch for transactional alerts</small>
+                                                    </div>
+
+                                                    <div className="col-md-6">
+                                                        <label className="font-weight-bold small text-muted text-uppercase mb-1">SMTP Username / Email</label>
+                                                        <input 
+                                                            type="email" 
+                                                            className="form-control font-monospace" 
+                                                            value={smtpUser}
+                                                            onChange={e => setSmtpUser(e.target.value)}
+                                                            placeholder="clintondye6@gmail.com"
+                                                            required
+                                                        />
+                                                        <small className="text-muted">Google account email address</small>
+                                                    </div>
+                                                    <div className="col-md-6">
+                                                        <label className="font-weight-bold small text-muted text-uppercase mb-1">SMTP Password / Google App Password</label>
+                                                        <input 
+                                                            type="text" 
+                                                            className="form-control font-monospace" 
+                                                            value={smtpPass}
+                                                            onChange={e => setSmtpPass(e.target.value)}
+                                                            placeholder="16-character app password"
+                                                            required
+                                                        />
+                                                        <small className="text-muted">For Gmail, use a 16-character Google App Password (not account password)</small>
+                                                    </div>
+
+                                                    <div className="col-md-6">
+                                                        <label className="font-weight-bold small text-muted text-uppercase mb-1">From Sender Name</label>
+                                                        <input 
+                                                            type="text" 
+                                                            className="form-control" 
+                                                            value={smtpFromName}
+                                                            onChange={e => setSmtpFromName(e.target.value)}
+                                                            placeholder="PND Bank Alerts"
+                                                        />
+                                                        <small className="text-muted">Appears as display name in client inboxes</small>
+                                                    </div>
+                                                    <div className="col-md-6">
+                                                        <label className="font-weight-bold small text-muted text-uppercase mb-1">From Email Address</label>
+                                                        <input 
+                                                            type="email" 
+                                                            className="form-control font-monospace" 
+                                                            value={smtpFrom}
+                                                            onChange={e => setSmtpFrom(e.target.value)}
+                                                            placeholder="clintondye6@gmail.com"
+                                                        />
+                                                        <small className="text-muted">Header sender email address</small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="card-footer bg-light py-3 border-top d-flex align-items-center justify-content-between">
+                                                <button 
+                                                    type="submit" 
+                                                    disabled={smtpSaving}
+                                                    className="btn btn-info font-weight-bold px-4 text-white"
+                                                >
+                                                    {smtpSaving ? (
+                                                        <><span className="spinner-border spinner-border-sm mr-2" role="status"></span>Saving...</>
+                                                    ) : (
+                                                        <><i className="fa-solid fa-floppy-disk mr-2"></i>Save SMTP Settings</>
+                                                    )}
+                                                </button>
+                                                <span className="small text-secondary"><i className="fa-solid fa-shield-halved mr-1 text-primary"></i>Protected by bank admin session</span>
+                                            </div>
+                                        </form>
                                     </div>
-                                </form>
+                                </div>
                             </div>
                         </div>
                     )}

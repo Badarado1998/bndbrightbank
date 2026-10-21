@@ -3,6 +3,7 @@ import { getSession } from '@/lib/session';
 import db from '@/lib/db';
 import fs from 'fs/promises';
 import path from 'path';
+import { sendDepositRequestEmail } from '@/lib/mailer';
 
 export async function POST(request) {
     try {
@@ -148,6 +149,19 @@ export async function POST(request) {
             action: 'deposit_request',
             details: `Requested deposit of ${method.deposit_amount} ${coinSymbol} for $${method.usd_credit} USD. Proof: ${proofPath}`,
             ip_address: request.headers.get('x-forwarded-for') || ''
+        });
+
+        // Send email notification to user asynchronously
+        sendDepositRequestEmail({
+            user: session,
+            deposit,
+            method: {
+                usd_credit: method.usd_credit,
+                deposit_amount: method.deposit_amount,
+                coin_symbol: coinSymbol
+            }
+        }).catch(err => {
+            console.warn("[Mailer] Deposit request email error:", err.message);
         });
 
         return NextResponse.json({

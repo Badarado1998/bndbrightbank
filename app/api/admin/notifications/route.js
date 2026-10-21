@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/session';
 import db from '@/lib/db';
+import { sendAdminMessageEmail } from '@/lib/mailer';
 
 export async function GET(request) {
     try {
@@ -48,6 +49,9 @@ export async function POST(request) {
         }
 
         await db.createNotification({ userId, title, message: message.trim(), senderRole: 'admin' });
+
+        // Send email alert to user
+        sendAdminMessageEmail({ user, title, message: message.trim() }).catch(e => console.warn('[Mailer] Admin message email error:', e.message));
 
         // Audit Log
         await db.createAuditLog({

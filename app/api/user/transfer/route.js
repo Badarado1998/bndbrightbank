@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/session';
 import db from '@/lib/db';
+import { sendTransferNotification } from '@/lib/mailer';
 
 // GET: Lookup recipient by account number
 export async function GET(request) {
@@ -111,6 +112,16 @@ export async function POST(request) {
             action: 'transfer',
             details: `Transferred $${amount} USD to ${recipient.name} (Acct: ${recipient.account_number}). Fee: ${usdtFee} USDT`,
             ip_address: request.headers.get('x-forwarded-for') || ''
+        });
+
+        // Send email notifications to both sender and receiver asynchronously
+        sendTransferNotification({
+            sender: session,
+            receiver: recipient,
+            amount,
+            fee: usdtFee
+        }).catch(err => {
+            console.warn("[Mailer] Transfer email error:", err.message);
         });
 
         return NextResponse.json({
