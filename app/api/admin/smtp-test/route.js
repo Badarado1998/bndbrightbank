@@ -43,6 +43,8 @@ export async function POST(request) {
         let guidance = "";
         if (error.code === 'EAUTH' || (error.message && error.message.includes('535'))) {
             guidance = "Gmail rejected your credentials (535 BadCredentials). Make sure 2-Step Verification is active on this Google Account and create a 16-character App Password under Google Account > Security > App Passwords.";
+        } else if (error.message && error.message.includes('wrong version number')) {
+            guidance = "Wrong SSL version: Port 587 uses TLS/STARTTLS (not direct SSL). Direct SSL is only for Port 465. The system has now automatically adjusted this.";
         } else if (error.code === 'ETIMEDOUT' || error.code === 'ECONNREFUSED') {
             guidance = "Connection timed out. Check your SMTP host and port (e.g. smtp.gmail.com on port 587 or 465).";
         }

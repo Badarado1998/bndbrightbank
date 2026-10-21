@@ -1206,7 +1206,12 @@ export default function AdminDashboardPage() {
                                                             type="number" 
                                                             className="form-control" 
                                                             value={smtpPort}
-                                                            onChange={e => setSmtpPort(e.target.value)}
+                                                            onChange={e => {
+                                                                const val = e.target.value;
+                                                                setSmtpPort(val);
+                                                                if (val === '465') setSmtpSecure('1');
+                                                                if (val === '587' || val === '25') setSmtpSecure('0');
+                                                            }}
                                                             placeholder="587"
                                                             required
                                                         />
@@ -1217,12 +1222,17 @@ export default function AdminDashboardPage() {
                                                         <select 
                                                             className="form-control" 
                                                             value={smtpSecure}
-                                                            onChange={e => setSmtpSecure(e.target.value)}
+                                                            onChange={e => {
+                                                                const val = e.target.value;
+                                                                setSmtpSecure(val);
+                                                                if (val === '1' && smtpPort === '587') setSmtpPort('465');
+                                                                if (val === '0' && smtpPort === '465') setSmtpPort('587');
+                                                            }}
                                                         >
                                                             <option value="0">TLS / STARTTLS (Port 587)</option>
                                                             <option value="1">Direct SSL (Port 465)</option>
                                                         </select>
-                                                        <small className="text-muted">Matches server encryption</small>
+                                                        <small className="text-muted">Auto-paired with port</small>
                                                     </div>
                                                     <div className="col-md-4">
                                                         <label className="font-weight-bold small text-muted text-uppercase mb-1">Notification Dispatch Toggle</label>
